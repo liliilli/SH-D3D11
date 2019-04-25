@@ -11,4 +11,5 @@ set(CMAKE_VERBOSE_MAKEFILE true)
 # TODO: Add tests and install targets if needed
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(DyUtils)
+add_subdirectory(Platform)
 add_subdirectory(Samples)
