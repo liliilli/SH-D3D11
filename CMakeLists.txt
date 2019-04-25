@@ -8,8 +8,10 @@ project(ShD3D11)
 
 # TODO: Add tests and install targets if needed
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
 include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.10056.0/ucrt)
+add_subdirectory(DyUtils)
 
 # https://faithandbrave.hateblo.jp/entry/2014/05/22/174050
 add_executable(example WIN32 src/main.c)
