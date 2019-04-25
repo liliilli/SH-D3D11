@@ -49,7 +49,7 @@ int WinMain(HINSTANCE hinst,
     c.hInstance = hinst;
     c.hIcon = LoadIcon(0, IDI_APPLICATION);
     c.hCursor = LoadCursor(0, IDC_ARROW);
-    c.hbrBackground = GetStockObject(WHITE_BRUSH);
+    c.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
     c.lpszClassName = "MainWindow";
     RegisterClass(&c);
   }
@@ -66,15 +66,22 @@ int WinMain(HINSTANCE hinst,
   );
   ShowWindow(h, show);
 
-  while (1) {  /* or while(running) */
+  bool running = true;
+  while (running) 
+  {  
     MSG msg;
-    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) { /* See Note 3,4 */
+    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) 
+    { 
       if (msg.message == WM_QUIT)
-        return (int)msg.wParam;
+      {
+        running = false;
+      }
+
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
   }
+
   return 0;
 }
 
