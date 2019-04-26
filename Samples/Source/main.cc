@@ -1,15 +1,11 @@
 #include <windows.h>
 
-static LRESULT WindowProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
-  /* More info at [2] */
+static LRESULT WindowProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) 
+{
   switch (msg)
   {
-    /*                                                              */
-    /* Add a win32 push button and do something when it's clicked.  */
-    /* Google will help you with the other widget types.  There are */
-    /* many tutorials.                                              */
-    /*                                                              */
-  case WM_CREATE: {
+  case WM_CREATE: 
+  {
     HWND hbutton = CreateWindow("BUTTON", "Hey There",  /* class and title */
       WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, /* style */
       0, 0, 100, 30,            /* position */
@@ -18,20 +14,16 @@ static LRESULT WindowProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
       GetModuleHandle(0), 0   /* GetModuleHandle(0) gets the hinst */
     );
   } break;
-
-  case WM_COMMAND: {
-    switch (LOWORD(wp)) {
+  case WM_COMMAND: 
+  {
+    switch (LOWORD(wp)) 
+    {
     case 101: /* the unique identifier used above. These are usually #define's */
       PostQuitMessage(0);
       break;
     default:;
     }
   } break;
-
-
-    /*                                 */
-    /* Minimally need the cases below: */
-    /*                                 */
   case WM_CLOSE: PostQuitMessage(0); break;
   default:
     return DefWindowProc(h, msg, wp, lp);
@@ -42,8 +34,10 @@ static LRESULT WindowProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
 int WinMain(HINSTANCE hinst,
   HINSTANCE hprev,
   LPSTR     cmdline,
-  int       show) {
-  if (!hprev) {
+  int       show) 
+{
+  if (!hprev) 
+  {
     WNDCLASS c = { 0 };
     c.lpfnWndProc = WindowProc;
     c.hInstance = hinst;
