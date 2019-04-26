@@ -11,11 +11,12 @@
 /// SOFTWARE.
 ///
 
+#include <cassert>
 #include <cstdio>
 #include <array>
-#include <cassert>
 #include <iostream>
 #include <optional>
+#include <vector>
 
 #include <d3d11.h>
 #include <HelperMacro.h>
@@ -54,6 +55,156 @@ CreateMainWindow(const std::string& titleName, unsigned width, unsigned height)
   return optRes;
 }
 
+/// @brief Returned list must be released explicitly.
+std::vector<IDXGIAdapter*> GetAllAdapters()
+{
+  std::vector<IDXGIAdapter*> enumrableAdapters = {};
+  IDXGIFactory* dxgiFactory = nullptr;
+  HR(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
+
+  UINT i = 0;
+  IDXGIAdapter* adapter = nullptr;
+  // i is index.
+  // When the EnumAdapters method succeeds and fills the ppAdapter parameter 
+  // with the address of the pointer to the adapter interface, 
+  // EnumAdapters increments the adapter interface's reference count.
+  while (dxgiFactory->EnumAdapters(i, &adapter) != DXGI_ERROR_NOT_FOUND)
+  {
+    enumrableAdapters.emplace_back(adapter);
+    ++i;
+  }
+
+  ReleaseCOM(dxgiFactory);
+  return enumrableAdapters;
+}
+
+void ReleaseD3DAdapters(std::vector<IDXGIAdapter*>& adapters)
+{
+  for (auto& adapter : adapters)
+  {
+    ReleaseCOM(adapter);
+  }
+}
+
+void ReleaseDXGIOutputs(std::vector<IDXGIOutput*>& outputs)
+{
+  for (auto& output : outputs)
+  {
+    ReleaseCOM(output);
+  }
+}
+
+/// EXERCISE 2 : User the IDXGIFactory::EnumAdapters method to determine
+/// how many adapters are on your system.
+void DisplayAvailableAdapterCount()
+{
+  auto adapters = GetAllAdapters();
+  // Output information of adapters of system.
+  std::cout << "Available adapter count : " << adapters.size() << "\n";
+
+  // Release IDXGIAdapters and IDXGIFactory.
+  ReleaseD3DAdapters(adapters);
+}
+
+/// EXERCISE 3.
+/// If you try to use CheckInterfaceSupport to check whether a Direct3D 11.x and later version 
+/// interface is supported, CheckInterfaceSupport returns DXGI_ERROR_UNSUPPORTED. 
+/// Therefore, do not use CheckInterfaceSupport. 
+/// Instead, to verify whether the operating system supports a particular interface, 
+/// try to create the interface. 
+/// For example, if you call the ID3D11Device::CreateBlendState method and it fails, 
+/// the operating system does not support the ID3D11BlendState interface.
+std::vector<IDXGIAdapter**> GetAdapterSupportsD3D10(std::vector<IDXGIAdapter*>& adapters)
+{
+  std::vector<IDXGIAdapter**> result = {};
+  for (auto& adapter : adapters)
+  {
+    LARGE_INTEGER umdVersion;
+    const auto flag = adapter->CheckInterfaceSupport(__uuidof(ID3D10Device), &umdVersion);
+    if (flag == S_OK)
+    {
+      result.emplace_back(&adapter);
+    }
+  }
+
+  return result;
+}
+
+bool CheckSupportD3D11(IDXGIAdapter*& adapter)
+{
+  assert(adapter != nullptr);
+
+  ID3D11Device* mD3DDevice;
+  ID3D11DeviceContext* mD3DImmediateContext;
+  D3D_FEATURE_LEVEL featureLevel;
+
+  HRESULT hr = D3D11CreateDevice(
+    adapter,              // Adapter to check.
+    D3D_DRIVER_TYPE_UNKNOWN, // Must use `D3D_DRIVER_TYPE_UNKNOWN`, when adapter is non-null. 
+    nullptr,              // No Software device because we use TYPE_HARDWARE (D3D11).
+    0,                    // Set flags (DEBUG, SINGLETHREAD etc...)
+    nullptr,              // If no flag is exist, just pick up the highest version of SDK.
+    0,                    // Above argument brings the array of D3D_FEATURE, so we set it to 0 as nullptr. 
+    D3D11_SDK_VERSION,    // Always specify this.
+    &mD3DDevice,          // Output
+    &featureLevel,        // Output
+    &mD3DImmediateContext // Output
+  );
+  
+  bool isSupport = (mD3DDevice == nullptr) ? false : true;
+  ReleaseCOM(mD3DImmediateContext);
+  ReleaseCOM(mD3DDevice);
+
+  return isSupport;
+}
+
+/// EXERCISE 4
+/// Use IDXGIAdapter::EnumOutputs to determine the number of outputs for adapter.
+std::vector<IDXGIOutput*> GetOutputsFromAdapter(IDXGIAdapter*& validAdapter)
+{
+  assert(validAdapter != nullptr);
+
+  std::vector<IDXGIOutput*> result = {};
+  UINT i = 0;
+  IDXGIOutput* output = nullptr;
+
+  // i is index.
+  // When the EnumOutputs method succeeds and fills the ppOutput parameter with 
+  // the address of the pointer to the output interface, 
+  // EnumOutputs increments the output interface's reference count. 
+  while (validAdapter->EnumOutputs(i, &output) != DXGI_ERROR_NOT_FOUND)
+  {
+    result.emplace_back(output);
+    ++i;
+  }
+
+  return result;
+}
+
+/// EXRECISE 5.
+/// For each output of adapter, show the width, height and refresh rate of each display mode,
+/// when the output supports for the DXGI_FORMAT_R8G8B8A8_UNORM format.
+void DisplayDisplayModeInformationOfOutput(IDXGIOutput*& validOutput)
+{
+  assert(validOutput != nullptr);
+
+  // https://docs.microsoft.com/en-us/windows/desktop/api/dxgi/nf-dxgi-idxgioutput-getdisplaymodelist
+  UINT countOfDesc = 0;
+  HR(validOutput->GetDisplayModeList(
+    DXGI_FORMAT_R8G8B8A8_UNORM, 
+    0, &countOfDesc, nullptr));
+
+  std::vector<DXGI_MODE_DESC> desc(countOfDesc);
+  HR(validOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &countOfDesc, desc.data()));
+
+  for (UINT i = 0; i < countOfDesc; ++i)
+  {
+    std::printf("*** WIDTH = %d HEIGHT = %d REFRESH = %d/%d\n",
+      desc[i].Width, desc[i].Height, 
+      desc[i].RefreshRate.Numerator, desc[i].RefreshRate.Denominator);
+  }
+}
+
 int WINAPI WinMain(
   [[maybe_unused]] HINSTANCE hInstance, 
   [[maybe_unused]] HINSTANCE hPrevInstance, 
@@ -81,6 +232,72 @@ int WINAPI WinMain(
   // This function is used to render context on Multi-thread environment.
   ID3D11DeviceContext* mD3DImmediateContext;
   D3D_FEATURE_LEVEL featureLevel;
+
+  /// EXERCISE 2.
+  DisplayAvailableAdapterCount();
+
+  /// EXERCISE 3.
+  /// If you try to use CheckInterfaceSupport to check whether a Direct3D 11.x and later version 
+  /// interface is supported, CheckInterfaceSupport returns DXGI_ERROR_UNSUPPORTED. 
+  /// Therefore, do not use CheckInterfaceSupport. 
+  /// Instead, to verify whether the operating system supports a particular interface, 
+  /// try to create the interface. 
+  /// For example, if you call the ID3D11Device::CreateBlendState method and it fails, 
+  /// the operating system does not support the ID3D11BlendState interface.
+  {
+    auto adapters = GetAllAdapters();
+    auto d3d11SupportedAdapters = GetAdapterSupportsD3D10(adapters);
+    // We release adapters in adavance because we do not any process with given adapters.
+    ReleaseD3DAdapters(adapters);
+
+    if (d3d11SupportedAdapters.empty() == true)
+    {
+      platform->GetDebugManager().OnAssertionFailed(
+        "Failed to initialize D3D11 Samples, None of adapters are not support ID3D11Device.",
+        __FUNCTION__, __FILE__, __LINE__
+      );
+
+      return 3;
+    }
+  }
+
+  /// EXERCISE 4.
+  /// Use IDXGIAdapter::EnumOutputs to determine the number of outputs for adapter.
+  {
+    auto adapters = GetAllAdapters();
+    auto pMainAdapter = adapters.front();
+
+    auto outputs = GetOutputsFromAdapter(pMainAdapter);
+    std::cout << "The number of outpus of main adapter. : " << outputs.size() << '\n';
+
+    ReleaseDXGIOutputs(outputs);
+    ReleaseD3DAdapters(adapters);
+  }
+
+  /// EXRECISE 5.
+  /// For each output of adapter, show the width, height and refresh rate of each display mode,
+  /// when the output supports for the DXGI_FORMAT_R8G8B8A8_UNORM format.
+  {
+    auto adapters = GetAllAdapters();
+    std::cout << "*** NUM ADAPTERS = " << adapters.size() << '\n';
+
+    for (std::size_t i = 0, size = adapters.size(); i < size; ++i)
+    {
+      if (CheckSupportD3D11(adapters[i]) == false) { continue; }
+      std::cout << "*** D3D11 SUPPORTED FOR ADAPTER " << i << '\n';
+
+      // Check.
+      auto outputs = GetOutputsFromAdapter(adapters[i]);
+      for (auto& output : outputs)
+      {
+        DisplayDisplayModeInformationOfOutput(output);
+      }
+
+      ReleaseDXGIOutputs(outputs);
+    }
+
+    ReleaseD3DAdapters(adapters);
+  }
 
   // Make device. (physical? logical?)
   HRESULT hr = D3D11CreateDevice(
@@ -184,7 +401,13 @@ int WINAPI WinMain(
 
     // Create swap chain.
     HR(dxgiFactory->CreateSwapChain(mD3DDevice, &sd, &mD3DSwapChain));
-    
+
+    /// EXERCISES 1 : Disable ALT+ENTER using DXGI API.
+    /// https://docs.microsoft.com/en-us/windows/desktop/api/dxgi/nf-dxgi-idxgifactory-makewindowassociation
+    HR(dxgiFactory->MakeWindowAssociation(
+      static_cast<HWND>(platform->_GetHandleOf(*optRes)),
+      DXGI_MWA_NO_WINDOW_CHANGES));
+
     // Release COM interfaces.
     ReleaseCOM(dxgiFactory);
     ReleaseCOM(dxgiAdapter);
@@ -247,10 +470,16 @@ int WINAPI WinMain(
 
   // Set Viewport
   D3D11_VIEWPORT vp;
+  vp.TopLeftX = 000.0f;
+  vp.TopLeftY = 000.0f;
+  vp.Width    = 500.0f;
+  vp.Height   = 400.0f;
+#if 0
   vp.TopLeftX = 0.0f;
   vp.TopLeftY = 0.0f;
   vp.Width    = static_cast<float>(width);
   vp.Height   = static_cast<float>(height);
+#endif
   vp.MinDepth = 0.0f;
   vp.MaxDepth = 1.0f;
   mD3DImmediateContext->RSSetViewports(1, &vp);
