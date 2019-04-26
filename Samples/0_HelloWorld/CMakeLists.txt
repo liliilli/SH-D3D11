@@ -33,7 +33,7 @@ PRIVATE
 set_target_properties(0_HelloWorld PROPERTIES 
 	LINKER_LANGUAGE CXX
 )
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS -DUNICODE)
 
 # Add dependencies.
 target_link_libraries(0_HelloWorld 
