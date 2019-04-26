@@ -34,7 +34,7 @@ set_target_properties(PlatformWin32 PROPERTIES
 	LINKER_LANGUAGE CXX
 	OUTPUT_NAME "PlatformWin32"
 )
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS -DUNICODE)
 
 # Add dependencies.
 target_link_libraries(PlatformWin32 

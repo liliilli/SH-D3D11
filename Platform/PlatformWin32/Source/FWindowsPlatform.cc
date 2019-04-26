@@ -112,8 +112,8 @@ LRESULT CALLBACK OnWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
     {
 			hdc = BeginPaint(hWnd, &ps);
 			TextOut(hdc, 5, 5, 
-        reinterpret_cast<LPCSTR>(greeting), 
-        int(lstrlen((LPCSTR)greeting))
+        greeting, 
+        int(lstrlen(greeting))
       );
 			EndPaint(hWnd, &ps);
     } break;
@@ -217,7 +217,7 @@ void FWindowsPlatform::SetWindowTitle(const DWindowHandle& handle, const std::st
   }
 
   auto& [uuid, hwnd] = *it;
-  const auto flag = SetWindowText(hwnd, (LPCSTR)ConvertStringToWString(newTitle).c_str());
+  const auto flag = SetWindowText(hwnd, ConvertStringToWString(newTitle).c_str());
   if (flag == 0)
   {
     LOG("Failed to set window title, %s.\n", newTitle.c_str());
@@ -247,7 +247,7 @@ std::string FWindowsPlatform::GetWindowTitle(const DWindowHandle& handle) const
   //std::wstring titleName = {256, 0};
   wchar_t titleName[256] = {0};
   auto& [uuid, hwnd] = *it;
-  const auto length = GetWindowText(hwnd, (LPSTR)titleName, 255);
+  const auto length = GetWindowText(hwnd, titleName, 255);
 
   // If failed to get window text, just return empty string.
   if (length == 0)
@@ -384,7 +384,7 @@ bool FWindowsPlatform::CreateConsoleWindow()
   {
     MessageBox(
       nullptr, 
-      (LPCSTR)L"The console window was not created.", 
+      L"The console window was not created.", 
       nullptr, MB_ICONEXCLAMATION);
     return false;
   }
@@ -404,7 +404,7 @@ bool FWindowsPlatform::RemoveConsoleWindow()
   {
      MessageBox(
       nullptr, 
-      (LPCSTR)L"Unexpected error occurred when closing console.", 
+      L"Unexpected error occurred when closing console.", 
       nullptr, MB_ICONEXCLAMATION);   
      return false;
   }
@@ -413,7 +413,7 @@ bool FWindowsPlatform::RemoveConsoleWindow()
   {
     MessageBox(
       nullptr, 
-      (LPCSTR)L"Failed to free console resource.", 
+      L"Failed to free console resource.", 
       nullptr, MB_ICONEXCLAMATION);
     return false;
   }
@@ -635,8 +635,8 @@ bool FWindowsPlatform::CreateBackgroundWindow()
   // Size does not matter because this window handle is used as background.
   handle.mBackgroundWindow = CreateWindowEx(
     WS_EX_OVERLAPPEDWINDOW,
-    (LPCSTR)L"Dy",
-    (LPCSTR)L"Back message window",
+    L"Dy",
+    L"Back message window",
     WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
     0, 0, 1, 1, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
 
