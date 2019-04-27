@@ -63,6 +63,12 @@ IComBorrow<TType> IComOwner<TType>::operator->()
 }
 
 template <typename TType>
+void IComOwner<TType>::Release()
+{
+  this->TryReleaseSelf();
+}
+
+template <typename TType>
 void IComOwner<TType>::TryReleaseSelf()
 {
   if (this->mPtrOwner != nullptr)

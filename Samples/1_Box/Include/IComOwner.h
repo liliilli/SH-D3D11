@@ -46,6 +46,9 @@ public:
   /// @brief Create temporary borrow type and do operator->() of borrow type recursively.
   IComBorrow<TType> operator->();
 
+  /// @brief Try release COM instance if COM is bound to wrapping type.
+  void Release();
+
 private:
   /// @brief Release (Decrease reference count of COM instance) 
   /// when COM instance is exist.
