@@ -19,6 +19,10 @@
 #include <vector>
 #include <filesystem>
 
+#include <examples/imgui_impl_win32.h>
+#include <examples/imgui_impl_dx11.h>
+#include <imgui.h>
+
 #include <D3Dcompiler.h>
 #include <D3D11.h>
 #include <HelperMacro.h>
@@ -53,6 +57,9 @@ void InitializeWin32Debug()
 #define WIN32_TRY_TURN_OFF_DEBUG()  (void)0
 
 #endif
+
+// Win32 message handler
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 std::unique_ptr<dy::APlatformBase> platform = nullptr;
 
@@ -388,15 +395,10 @@ int WINAPI WinMain(
 
   // Create Index Buffer.
   std::array<unsigned, 36> indices =
-  {
-    0, 1, 2, 0, 2, 3,
-    4, 5, 6, 4, 6, 7,
-    
-    1, 2, 6, 1, 6, 5,
-    3, 0, 4, 3, 4, 7,
-
-    0, 1, 5, 0, 5, 4,
-    2, 6, 7, 2, 7, 3,
+  { // 1        2        3        4
+    0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7,
+    1, 2, 6, 1, 6, 5, 3, 0, 4, 3, 4, 7,
+    0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3,
   };
 
   IComOwner<ID3D11Buffer> iBuffer = nullptr;
@@ -418,46 +420,51 @@ int WINAPI WinMain(
   // Compile Vertex Shader.
   // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3dcompiler/nf-d3dcompiler-d3dcompile2
   // "VS" is entry point.
-  IComOwner<ID3DBlob> ownVsBlob = nullptr;
-  HR(CompileShaderFromFile("../../Resource/Shader.fx", "VS", "vs_5_0", &ownVsBlob));
-
   IComOwner<ID3D11VertexShader> ownVertexShader = nullptr;
-  HR(mD3DDevice->CreateVertexShader(
-    ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(), 
-    nullptr, 
-    &ownVertexShader));
-
-  // Create Vertex shader input layout.
-  // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_input_element_desc
-  std::array<D3D11_INPUT_ELEMENT_DESC, 2> vertexDesc =
-  {
-    decltype(vertexDesc)::value_type
-    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA , 0},
-    {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
-  };
-
   IComOwner<ID3D11InputLayout> ownVsLayout = nullptr;
-  HR(mD3DDevice->CreateInputLayout(
-    vertexDesc.data(), static_cast<UINT>(vertexDesc.size()), 
-    ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(),
-    &ownVsLayout));
+  {
+    IComOwner<ID3DBlob> ownVsBlob = nullptr;
+    HR(CompileShaderFromFile("../../Resource/Shader.fx", "VS", "vs_5_0", &ownVsBlob));
 
+    HR(mD3DDevice->CreateVertexShader(
+      ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(), 
+      nullptr, 
+      &ownVertexShader));
+   
+    // Create Vertex shader input layout.
+    // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_input_element_desc
+    std::array<D3D11_INPUT_ELEMENT_DESC, 2> vertexDesc =
+    {
+      decltype(vertexDesc)::value_type
+      {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA , 0},
+      {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+
+    HR(mD3DDevice->CreateInputLayout(
+      vertexDesc.data(), static_cast<UINT>(vertexDesc.size()), 
+      ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(),
+      &ownVsLayout));
+
+    ownVsBlob->Release();
+  }
   // Set layout into logical device context.
   mD3DImmediateContext->IASetInputLayout(&ownVsLayout.Get());
-  ownVsBlob->Release();
 
   // Compile Pixel Shader 
   // "PS" is entry point.
-  IComOwner<ID3DBlob> ownPsBlob = nullptr;
-  HR(CompileShaderFromFile("../../Resource/Shader.fx", "PS", "ps_5_0", &ownPsBlob));
-
   IComOwner<ID3D11PixelShader> ownPsShader = nullptr;
-  HR(mD3DDevice->CreatePixelShader(
-    ownPsBlob->GetBufferPointer(), ownPsBlob->GetBufferSize(), 
-    nullptr, 
-    &ownPsShader));
-  ownPsBlob->Release();
+  {
+    IComOwner<ID3DBlob> ownPsBlob = nullptr;
+    HR(CompileShaderFromFile("../../Resource/Shader.fx", "PS", "ps_5_0", &ownPsBlob));
 
+    HR(mD3DDevice->CreatePixelShader(
+      ownPsBlob->GetBufferPointer(), ownPsBlob->GetBufferSize(), 
+      nullptr, 
+      &ownPsShader));
+    ownPsBlob->Release();
+  }
+ 
+  // Set topologies.
   mD3DImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   UINT stride = sizeof(DVertex);
   UINT offset = 0;
@@ -488,6 +495,22 @@ int WINAPI WinMain(
     {0, 0, 1, 1}, {1, 0, 1, 1}, {1, 1, 0, 1}, {1, 0, 0, 1},
   };
 
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  //ImGui::StyleColorsClassic();
+
+  // Setup Platform/Renderer bindings
+  ImGui_ImplWin32_Init(platform->_GetHandleOf(*optRes));
+  ImGui_ImplDX11_Init(mD3DDevice, mD3DImmediateContext);
+  platform->SetPreProcessCallback(ImGui_ImplWin32_WndProcHandler);
+
   // Loop
 	while (platform->CanShutdown() == false)
 	{
@@ -503,9 +526,44 @@ int WINAPI WinMain(
     mD3DImmediateContext->PSSetShader(&ownPsShader.Get(), nullptr, 0);
     mD3DImmediateContext->DrawIndexed(36, 0, 0);
 
+    // Start the Dear ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+
+    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+    {
+      static float f = 0.0f;
+      static int counter = 0;
+
+      ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
+      ImGui::Text("This is some useful text.");  // Display some text (you can use a format strings too)
+
+      ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+      if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
+      {
+        counter++;
+      }
+      ImGui::SameLine();
+      ImGui::Text("counter = %d", counter);
+
+      ImGui::Text(
+        "Application average %.3f ms/frame (%.1f FPS)", 
+        1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+      ImGui::End();
+    }
+
+    // Rendering
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
     // Present the back buffer to the screen.
     HR(mD3DSwapChain->Present(0, 0));
 	}
+
+  ImGui_ImplDX11_Shutdown();
+  ImGui_ImplWin32_Shutdown();
+  ImGui::DestroyContext();
 
   platform->RemoveAllWindow();
   platform->RemoveConsoleWindow();
