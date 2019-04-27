@@ -33,6 +33,9 @@ class FWindowsPlatform final : public APlatformBase
 public:
   FWindowsPlatform();
   virtual ~FWindowsPlatform(); 
+  
+  /// @brief WinProc callback type.
+  using TProcCallback = LRESULT(*)(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 private:
   /// @brief Register window class into Win32 internal system.
@@ -118,6 +121,10 @@ private:
   /// @brief Get internal handle instance of given handle.
   /// If not exist, just return nullptr.
   void* _GetHandleOf(const DWindowHandle& handle) override final;
+
+  /// @brief Set pre-process callback function.
+  /// callback type must be matched `TProcCallback`.
+  void SetPreProcessCallback(void* callback) override final;
 
 private:
   FILE* mFdConsole = nullptr;

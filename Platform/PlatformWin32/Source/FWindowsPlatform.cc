@@ -40,12 +40,13 @@ namespace
 
 /// @brief
 dy::APlatformBase* platform = nullptr;
-
 /// @brief 
 std::queue<dy::DWin32PostMessage> sPostMessages = {};
+/// @brief
+dy::FWindowsPlatform::TProcCallback sPreCallback = nullptr;
 
-  /// @brief
-  DWORD GetWin32WindowStyle(const dy::PWindowCreationDescriptor& desc)
+/// @brief
+DWORD GetWin32WindowStyle(const dy::PWindowCreationDescriptor& desc)
 {
   DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 
@@ -105,6 +106,12 @@ LRESULT CALLBACK OnWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	wchar_t greeting[] = L"Hello, World!";
 
   using namespace dy::base;
+
+  if (sPreCallback != nullptr
+  && (message != WM_CLOSE && message != WM_PAINT && message != WM_DESTROY))
+  {
+    sPreCallback(hWnd, message, wParam, lParam);
+  }
 
 	switch (message)
 	{
@@ -732,6 +739,11 @@ void* FWindowsPlatform::_GetHandleOf(const DWindowHandle& handle)
 
   auto& [uuid, hwnd] = *it;
   return hwnd;
+}
+
+void FWindowsPlatform::SetPreProcessCallback(void* callback)
+{
+  sPreCallback = static_cast<TProcCallback>(callback);
 }
 
 } /// ::dy namespace

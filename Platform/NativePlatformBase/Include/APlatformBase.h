@@ -143,6 +143,10 @@ public:
   /// If not exist, just return nullptr.
   virtual void* _GetHandleOf(const DWindowHandle& handle) = 0;
 
+  /// @brief Set Pre-process callback function.
+  /// This function could be not implemented by OS.
+  virtual void SetPreProcessCallback(void* callback) {};
+
 protected:
   std::unique_ptr<AHandlesBase>     mHandle     = nullptr;
   std::unique_ptr<ADebugBase>       mDebug      = nullptr;
