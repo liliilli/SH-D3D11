@@ -26,6 +26,7 @@
 #include <D3Dcompiler.h>
 #include <D3D11.h>
 #include <HelperMacro.h>
+#include <XCommonDebug.h>
 #include <IComOwner.h>
 #include <IComBorrow.h>
 
@@ -36,27 +37,6 @@
 
 #include <FWindowsPlatform.h>
 #include <PLowInputMousePos.h>
-
-/// @brief Turn on memory leak detection feature and console window for logging.
-void InitializeWin32Debug()
-{
-  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-  _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
-}
-
-#if defined(_DEBUG) == true
-
-#define WIN32_CRT_BREAKPOINT(Id)    _crtBreakAlloc(Id) 
-#define WIN32_TRY_TURN_ON_DEBUG()   InitializeWin32Debug()
-#define WIN32_TRY_TURN_OFF_DEBUG()  (void)0
-
-#else
-
-#define WIN32_CRT_BREAKPOINT(Id)    (void)0
-#define WIN32_TRY_TURN_ON_DEBUG()   (void)0
-#define WIN32_TRY_TURN_OFF_DEBUG()  (void)0
-
-#endif
 
 // Win32 message handler
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

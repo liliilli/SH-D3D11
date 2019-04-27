@@ -6,11 +6,22 @@ set(CMAKE_CXX_STANDARD_REQAUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_VERBOSE_MAKEFILE true)
 
-set(D3D11SDK "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.17763.0\\um")
+set(WIN32_KIT_INCLUDE "C:\\Program Files (x86)\\Windows Kits\\10\\Include")
+set(WIN32_KIT_NUMBER 10.0.17763.0)
+set(D3D11SDK "${WIN32_KIT_INCLUDE}\\${WIN32_KIT_NUMBER}\\um")
+set(COMMON_INCLUDE "${CMAKE_SOURCE_DIR}\\Samples\\_Common")
 
 include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
 include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
 AUX_SOURCE_DIRECTORY("${CMAKE_CURRENT_SOURCE_DIR}/Source" SOURCE)
+
+set(IMGUI_SOURCE
+	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui_draw.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui_widgets.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/examples/imgui_impl_win32.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/examples/imgui_impl_dx11.cpp"
+)
 
 # Set Include path.
 include_directories("./Include")
@@ -18,14 +29,11 @@ include_directories("./Include")
 # https://faithandbrave.hateblo.jp/entry/2014/05/22/174050
 add_executable(1_Box WIN32 
 	${SOURCE} 
-	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui.cpp"
-	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui_draw.cpp"
-	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui_widgets.cpp"
-	"${CMAKE_SOURCE_DIR}/Library/imgui/examples/imgui_impl_win32.cpp"
-	"${CMAKE_SOURCE_DIR}/Library/imgui/examples/imgui_impl_dx11.cpp"
+	${IMGUI_SOURCE}
 )
 target_include_directories(1_Box
 PUBLIC
+	${COMMON_INCLUDE}
 	${CMAKE_CURRENT_SOURCE_DIR}/Include
 	${CMAKE_SOURCE_DIR}/Library/imgui
 	"${D3D11SDK}/Include"
