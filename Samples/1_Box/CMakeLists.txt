@@ -16,10 +16,18 @@ AUX_SOURCE_DIRECTORY("${CMAKE_CURRENT_SOURCE_DIR}/Source" SOURCE)
 include_directories("./Include")
 
 # https://faithandbrave.hateblo.jp/entry/2014/05/22/174050
-add_executable(1_Box WIN32 ${SOURCE})
+add_executable(1_Box WIN32 
+	${SOURCE} 
+	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui_draw.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui_widgets.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/examples/imgui_impl_win32.cpp"
+	"${CMAKE_SOURCE_DIR}/Library/imgui/examples/imgui_impl_dx11.cpp"
+)
 target_include_directories(1_Box
 PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/Include
+	${CMAKE_SOURCE_DIR}/Library/imgui
 	"${D3D11SDK}/Include"
 	
 PRIVATE
