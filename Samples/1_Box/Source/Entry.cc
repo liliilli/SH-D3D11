@@ -37,6 +37,7 @@
 
 #include <FWindowsPlatform.h>
 #include <PLowInputMousePos.h>
+#include <XTriangle.h>
 
 // Win32 message handler
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -323,40 +324,13 @@ int WINAPI WinMain(
 
   // Set Viewport
   D3D11_VIEWPORT vp;
-  vp.TopLeftX = 0.0f;
-  vp.TopLeftY = 0.0f;
+  vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;
+  vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
   vp.Width    = static_cast<float>(width);
   vp.Height   = static_cast<float>(height);
-  vp.MinDepth = 0.0f;
-  vp.MaxDepth = 1.0f;
   mD3DImmediateContext->RSSetViewports(1, &vp);
 
   // * Build Geometry Buffers.
-  using dy::math::DVector3;
-  using dy::math::DVector4;
-  using dy::math::TReal;
-
-  // Create Vertex Buffer.
-  struct DVertex final
-  {
-    DVector3<TReal> mPos;
-    DVector4<TReal> mCol;
-  };
-
-  std::array<DVertex, 8> vertices =
-  { 
-    DVertex
-    { {-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f, 1.0f} },
-    { {+1.0f, -1.0f, -1.0f}, {0.0f, 0.0f, 0.0f, 1.0f} },
-    { {+1.0f, -1.0f, +1.0f}, {1.0f, 0.0f, 0.0f, 1.0f} },
-    { {-1.0f, -1.0f, +1.0f}, {0.0f, 1.0f, 0.0f, 1.0f} },
-
-    { {-1.0f, +1.0f, -1.0f}, {0.0f, 0.0f, 1.0f, 1.0f} },
-    { {+1.0f, +1.0f, -1.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
-    { {+1.0f, +1.0f, +1.0f}, {1.0f, 0.0f, 1.0f, 1.0f} },
-    { {-1.0f, +1.0f, +1.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
-  };
-
   IComOwner<ID3D11Buffer> vBuffer = nullptr;
   {
     D3D11_BUFFER_DESC vbDesc;
@@ -372,14 +346,6 @@ int WINAPI WinMain(
 
     HR(mD3DDevice->CreateBuffer(&vbDesc, &vbData, &vBuffer));
   }
-
-  // Create Index Buffer.
-  std::array<unsigned, 36> indices =
-  { // 1        2        3        4
-    0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7,
-    1, 2, 6, 1, 6, 5, 3, 0, 4, 3, 4, 7,
-    0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3,
-  };
 
   IComOwner<ID3D11Buffer> iBuffer = nullptr;
   {
@@ -425,8 +391,9 @@ int WINAPI WinMain(
       ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(),
       &ownVsLayout));
 
-    ownVsBlob->Release();
+    ownVsBlob.Release();
   }
+
   // Set layout into logical device context.
   mD3DImmediateContext->IASetInputLayout(&ownVsLayout.Get());
 
@@ -441,7 +408,7 @@ int WINAPI WinMain(
       ownPsBlob->GetBufferPointer(), ownPsBlob->GetBufferSize(), 
       nullptr, 
       &ownPsShader));
-    ownPsBlob->Release();
+    ownPsBlob.Release();
   }
  
   // Set topologies.
@@ -451,29 +418,71 @@ int WINAPI WinMain(
   mD3DImmediateContext->IASetVertexBuffers(0, 1, &vBuffer, &stride, &offset);
   mD3DImmediateContext->IASetIndexBuffer(&iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
+  // Set raster state (RS)
   IComOwner<ID3D11RasterizerState> ownRasterState = nullptr;
   {
     D3D11_RASTERIZER_DESC rasterDesc;
     rasterDesc.FillMode = D3D11_FILL_SOLID;
     rasterDesc.CullMode = D3D11_CULL_BACK;
     rasterDesc.FrontCounterClockwise = true;
-    rasterDesc.DepthBias = 0;
+    rasterDesc.DepthBias = INT(0);
+    rasterDesc.DepthBiasClamp = FLOAT(0);
     rasterDesc.SlopeScaledDepthBias = 0;
     rasterDesc.DepthClipEnable = true;
-    rasterDesc.ScissorEnable = true;
+    rasterDesc.ScissorEnable = false;
     rasterDesc.MultisampleEnable = false;
     rasterDesc.AntialiasedLineEnable = false;
 
-    mD3DDevice->CreateRasterizerState(&rasterDesc, &ownRasterState);
+    HR(mD3DDevice->CreateRasterizerState(&rasterDesc, &ownRasterState));
   }
   mD3DImmediateContext->RSSetState(&ownRasterState.Get());
 
-  using TColor = std::array<float, 4>;
-  const std::array<TColor, 4> colors =
+  // Set rect state.
+  std::array<D3D11_RECT, 1> ownRectState =
   {
-    TColor
-    {0, 0, 1, 1}, {1, 0, 1, 1}, {1, 1, 0, 1}, {1, 0, 0, 1},
+    D3D11_RECT
+    {0, 0, 800, 600}
   };
+  mD3DImmediateContext->RSSetScissorRects(1, ownRectState.data());
+
+  // Set depth stencil state
+  IComOwner<ID3D11DepthStencilState> ownDepthStencilState = nullptr;
+  {
+    D3D11_DEPTH_STENCIL_DESC dssd = {};
+    dssd.DepthEnable    = FALSE;
+    dssd.DepthFunc      = D3D11_COMPARISON_LESS;
+    dssd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    dssd.StencilEnable  = FALSE;
+    dssd.StencilReadMask  = 0xff;
+    dssd.StencilWriteMask = 0xff;
+
+    HR(mD3DDevice->CreateDepthStencilState(&dssd, &ownDepthStencilState));
+  }
+  mD3DImmediateContext->OMSetDepthStencilState(&ownDepthStencilState.Get(), 0x00);
+
+  // Set blend state
+  IComOwner<ID3D11BlendState> ownBlendState = nullptr;
+  {
+    D3D11_BLEND_DESC blendDesc = {};
+    {
+      D3D11_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
+      rtBlendDesc.BlendEnable   = TRUE;
+      rtBlendDesc.BlendOp       = D3D11_BLEND_OP_ADD;
+      rtBlendDesc.BlendOpAlpha  = D3D11_BLEND_OP_ADD;
+      rtBlendDesc.SrcBlend      = D3D11_BLEND_SRC_ALPHA;
+      rtBlendDesc.DestBlend     = D3D11_BLEND_INV_SRC_ALPHA;
+      rtBlendDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
+      rtBlendDesc.DestBlendAlpha= D3D11_BLEND_ZERO;
+      rtBlendDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL; 
+      blendDesc.RenderTarget[0] = rtBlendDesc; 
+    }
+    blendDesc.AlphaToCoverageEnable = false;
+    blendDesc.IndependentBlendEnable = false;
+
+    HR(mD3DDevice->CreateBlendState(&blendDesc, &ownBlendState));
+  }
+  const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
+  mD3DImmediateContext->OMSetBlendState(&ownBlendState.Get(), blendFactor, 0xFFFFFFFF);
 
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
@@ -502,9 +511,11 @@ int WINAPI WinMain(
       D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
       1.0f,
       0);
+
+    //mD3DImmediateContext->RSSetState(&ownRasterState.Get());
     mD3DImmediateContext->VSSetShader(&ownVertexShader.Get(), nullptr, 0);
     mD3DImmediateContext->PSSetShader(&ownPsShader.Get(), nullptr, 0);
-    mD3DImmediateContext->DrawIndexed(36, 0, 0);
+    mD3DImmediateContext->DrawIndexed(3, 0, 0);
 
     // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
