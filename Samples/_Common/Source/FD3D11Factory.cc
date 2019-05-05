@@ -149,3 +149,22 @@ FD3D11Factory::CompileShaderFromFile(
   ReleaseCOM(pErrorBlob);
   return hr;
 }
+
+std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
+  ID3D11Device& device,
+  bool isDisjoint)
+{
+  IComOwner<ID3D11Query> result = nullptr;
+
+  D3D11_QUERY_DESC queryDesc;
+  queryDesc.Query = isDisjoint == true ? D3D11_QUERY_TIMESTAMP_DISJOINT : D3D11_QUERY_TIMESTAMP;
+  queryDesc.MiscFlags = 0;
+
+  if (device.CreateQuery(&queryDesc, &result) != S_OK)
+  {
+    result.Release();
+    return std::nullopt;
+  }
+
+  return result;
+}

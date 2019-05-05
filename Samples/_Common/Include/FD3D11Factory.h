@@ -39,5 +39,11 @@ public:
     LPCSTR szEntryPoint, 
     LPCSTR szShaderModel, 
     ID3DBlob** ppBlobOut);
+
+  /// @brief Try to create timestamp query.
+  /// If failed, just return nullopt.
+  static std::optional<IComOwner<ID3D11Query>> CreateTimestampQuery(
+    ID3D11Device& device,
+    bool isDisjoint);
 };
 
