@@ -164,6 +164,7 @@ LRESULT CALLBACK OnWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
       platform->GetInputManager().UpdateMousePos(&desc);
 
       // Debug
+#if 0
       if (auto optPos = platform->GetInputManager().GetMousePos(); 
           optPos.has_value() == true)
       {
@@ -174,6 +175,7 @@ LRESULT CALLBACK OnWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
       {
         LOG("Mouse Movement Amount : (%3d, %3d)\n", (*optAmnt).first, (*optAmnt).second);
       }
+#endif
       // Dispensable tracing event.
       {
         TRACKMOUSEEVENT mouseEvent;
