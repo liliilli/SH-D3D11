@@ -34,7 +34,9 @@ set(SOURCE
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeContainer.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeFragment.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FTimeContainer.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Source/IGuiFrame.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/MTimeChecker.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Source/MGuiManager.cc"
 )
 
 set(IMGUI_SOURCE
