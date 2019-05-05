@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.8)
-project(1_Box CXX)
+project(1_Triangle CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQAUIRED ON)
@@ -32,11 +32,11 @@ set(IMGUI_SOURCE
 include_directories("./Include")
 
 # https://faithandbrave.hateblo.jp/entry/2014/05/22/174050
-add_executable(1_Box WIN32 
+add_executable(1_Triangle WIN32 
 	${SOURCE} 
 	${IMGUI_SOURCE}
 )
-target_include_directories(1_Box
+target_include_directories(1_Triangle
 PUBLIC
 	${COMMON_INCLUDE}
 	${CMAKE_CURRENT_SOURCE_DIR}/Include
@@ -51,27 +51,27 @@ PRIVATE
 	${CMAKE_SOURCE_DIR}/Platform/NativePlatformBase/Include	
 	${CMAKE_SOURCE_DIR}/Platform/PlatformWin32/Include	
 )
-set_target_properties(1_Box PROPERTIES 
+set_target_properties(1_Triangle PROPERTIES 
 	LINKER_LANGUAGE CXX
 )
 add_definitions(-D_CRT_SECURE_NO_WARNINGS -DUNICODE)
 
 # Add dependencies.
-target_link_libraries(1_Box 
+target_link_libraries(1_Triangle 
 	DyStringUtil
 	DyMath
 	InputsBase
 	PlatformWin32
 	Common
 )
-target_link_libraries(1_Box 
+target_link_libraries(1_Triangle 
 	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/d3d11.lib"
 	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/dxgi.lib"
 	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/D3Dcompiler.lib"
 )
 
 # Install Settings
-set_target_properties(1_Box
+set_target_properties(1_Triangle
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}\\lib\\${CMAKE_BUILD_TYPE}"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}\\lib\\${CMAKE_BUILD_TYPE}"
