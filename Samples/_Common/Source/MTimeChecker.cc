@@ -32,7 +32,7 @@ FD3D11TimeHandle MTimeChecker::CheckGpuD3D11Time(
   ID3D11DeviceContext& deviceContext,
   bool isUpdateDeferred)
 {
-  if (mTimerContainer.find(tagName) == mTimerContainer.end())
+  if (mD3D11TimeContainer.find(tagName) == mD3D11TimeContainer.end())
   {
     mD3D11TimeContainer[tagName] = std::make_unique<FD3D11TimeContainer>();
   }
