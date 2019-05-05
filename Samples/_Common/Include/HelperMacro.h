@@ -45,3 +45,5 @@
 #endif
 
 #define ReleaseCOM(x) { if(x){ x->Release(); x = NULL; } }
+
+#define LOG(...) {char buf[256]; sprintf(buf, __VA_ARGS__); OutputDebugStringA(buf); }
