@@ -417,80 +417,68 @@ int WINAPI WinMain(
 	{
     platform->PollEvents();
 
-    auto _ = MTimeChecker::CheckCpuTime("CpuFrame");
-    mD3DImmediateContext->Begin(&ownDisjointQuery.Get());
-    mD3DImmediateContext->End(&ownGpuStartFrameQuery.Get());
+    auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
+    auto gpuTime = MTimeChecker::CheckGpuD3D11Time("GpuFrame", 
+      ownDisjointQuery.Get(), mD3DImmediateContext.Get(), false);
 
-    // D3D Routine
-    mD3DImmediateContext->ClearRenderTargetView(&mRenderTargetView.Get(), colors[0].data());
-    mD3DImmediateContext->ClearDepthStencilView(&mDepthStencilView.Get(), 
-      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-      1.0f,
-      0);
-
-    //mD3DImmediateContext->RSSetState(&ownRasterState.Get());
-    mD3DImmediateContext->VSSetShader(&ownVertexShader.Get(), nullptr, 0);
-    mD3DImmediateContext->PSSetShader(&ownPsShader.Get(), nullptr, 0);
-    mD3DImmediateContext->DrawIndexed(3, 0, 0);
-
-    // Start the Dear ImGui frame
-    ImGui_ImplDX11_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
     {
-      static float f = 0.0f;
-      static int counter = 0;
+      auto fragment = 
+        gpuTime.CheckFragment("Overall", ownGpuStartFrameQuery.Get(), ownGpuEndFrameQuery.Get());
 
-      ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
-      ImGui::Text("This is some useful text.");  // Display some text (you can use a format strings too)
+      // D3D Routine
+      mD3DImmediateContext->ClearRenderTargetView(&mRenderTargetView.Get(), colors[0].data());
+      mD3DImmediateContext->ClearDepthStencilView(&mDepthStencilView.Get(), 
+        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+        1.0f,
+        0);
 
-      ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-      if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
+      //mD3DImmediateContext->RSSetState(&ownRasterState.Get());
+      mD3DImmediateContext->VSSetShader(&ownVertexShader.Get(), nullptr, 0);
+      mD3DImmediateContext->PSSetShader(&ownPsShader.Get(), nullptr, 0);
+      mD3DImmediateContext->DrawIndexed(3, 0, 0);
+
+      // Start the Dear ImGui frame
+      ImGui_ImplDX11_NewFrame();
+      ImGui_ImplWin32_NewFrame();
+      ImGui::NewFrame();
+
+      // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
       {
-        counter++;
-      }
-      ImGui::SameLine();
-      ImGui::Text("counter = %d", counter);
+        static float f = 0.0f;
+        static int counter = 0;
 
-      ImGui::Text(
-        "Application average of ImGui %.3f ms/frame (%.1f FPS)", 
-        1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-      ImGui::Text("CPU Average frame %.3f ms/frame",
-        MTimeChecker::Get("CpuFrame").GetAverage().count() * 1000.0);
-      ImGui::Text("GPU Frame %.3f ms/frame", msGpuFrame);
-      ImGui::End();
-    }
+        ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
+        ImGui::Text("This is some useful text.");  // Display some text (you can use a format strings too)
 
-    // Rendering
-    ImGui::Render();
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+        ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+        // Buttons return true when clicked (most widgets return true when edited/activated)
+        if (ImGui::Button("Button")) 
+        {
+          counter++;
+        }
+        ImGui::SameLine();
+        ImGui::Text("counter = %d", counter);
 
-    // Present the back buffer to the screen.
-    HR(mD3DSwapChain->Present(0, 0));
-    mD3DImmediateContext->End(&ownGpuEndFrameQuery.Get());
-    mD3DImmediateContext->End(&ownDisjointQuery.Get());
+        ImGui::Text(
+          "Application average of ImGui %.3f ms/frame (%.1f FPS)", 
+          1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text("CPU Average frame %.3f ms/frame",
+          MTimeChecker::Get("CpuFrame").GetAverage().count() * 1000.0);
 
-    // Collect GPU Time stamps
-    {
-      while (mD3DImmediateContext->GetData(&ownDisjointQuery.Get(), nullptr, 0, 0) == S_FALSE);
-
-      // Check whether timestamps were disjoint during the last frame
-      D3D11_QUERY_DATA_TIMESTAMP_DISJOINT tsDisjoint;
-      mD3DImmediateContext->GetData(&ownDisjointQuery.Get(), &tsDisjoint, sizeof(tsDisjoint), 0);
-      if (tsDisjoint.Disjoint)
-      {
-        continue;
+        if (MTimeChecker::GetGpuD3D11("GpuFrame").HasFragment("Overall") == true)
+        {
+          ImGui::Text("GPU Frame %.3f ms/frame", 
+            MTimeChecker::GetGpuD3D11("GpuFrame")["Overall"].GetRecent().count() * 1000.0);
+        }
+        ImGui::End();
       }
 
-      // Get All the timestamps.
-      UINT64 tsBeginFrame, tsEndFrame;
-      mD3DImmediateContext->GetData(&ownGpuStartFrameQuery.Get(), &tsBeginFrame, sizeof(UINT64), 0);
-      mD3DImmediateContext->GetData(&ownGpuEndFrameQuery.Get(), &tsEndFrame, sizeof(UINT64), 0);
+      // Rendering
+      ImGui::Render();
+      ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-      // Convert to real time (ms).
-      msGpuFrame = float(tsEndFrame - tsBeginFrame) / float(tsDisjoint.Frequency) * 1000.0f;
+      // Present the back buffer to the screen.
+      HR(mD3DSwapChain->Present(0, 0));
     }
 	}
 
