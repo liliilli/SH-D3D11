@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_VERBOSE_MAKEFILE true)
 
 set(D3D11SDK "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)")
+set(COMMON_INCLUDE "${CMAKE_SOURCE_DIR}\\Samples\\_Common\\Include")
 
 include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
 include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
@@ -20,6 +21,7 @@ add_executable(0_HelloWorld WIN32 ${SOURCE})
 target_include_directories(0_HelloWorld
 PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/Include
+	${COMMON_INCLUDE}
 	"${D3D11SDK}/Include"
 	
 PRIVATE

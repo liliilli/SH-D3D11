@@ -9,7 +9,7 @@ set(CMAKE_VERBOSE_MAKEFILE true)
 set(WIN32_KIT_INCLUDE "C:\\Program Files (x86)\\Windows Kits\\10\\Include")
 set(WIN32_KIT_NUMBER 10.0.17763.0)
 set(D3D11SDK "${WIN32_KIT_INCLUDE}\\${WIN32_KIT_NUMBER}\\um")
-set(COMMON_INCLUDE "${CMAKE_SOURCE_DIR}\\Samples\\_Common")
+set(COMMON_INCLUDE "${CMAKE_SOURCE_DIR}\\Samples\\_Common\\Include")
 
 include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
 include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
@@ -57,6 +57,7 @@ target_link_libraries(1_Box
 	DyMath
 	InputsBase
 	PlatformWin32
+	Common
 )
 target_link_libraries(1_Box 
 	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/d3d11.lib"
