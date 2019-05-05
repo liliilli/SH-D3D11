@@ -12,19 +12,8 @@
 /// SOFTWARE.
 ///
 
-#include <IGuiFrame.h>
+#include <IGuiFrameModel.h>
 #include <IGuiModel.h>
-
-class FGuiMainMenu final : public IGuiFrame
-{
-public:
-  FGuiMainMenu();
-  virtual ~FGuiMainMenu() = default;
-
-private:
-  void Render() override final;
-  void UpdateBackgroundPicker(bool& present, bool& previous);
-};
 
 class DModelMainMenu final : public IGuiModel
 {
@@ -35,5 +24,16 @@ private:
   bool mPrevViewBackgroundColorPicker = false;
 
   friend class FGuiMainMenu;
+};
+
+class FGuiMainMenu final : public IGuiFrameModel<DModelMainMenu>
+{
+public:
+  FGuiMainMenu();
+  virtual ~FGuiMainMenu() = default;
+
+private:
+  void Render() override final;
+  void UpdateBackgroundPicker(bool& present, bool& previous);
 };
 

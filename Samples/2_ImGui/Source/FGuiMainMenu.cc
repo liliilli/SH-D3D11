@@ -59,11 +59,13 @@ void FGuiMainMenu::Render()
 
 void FGuiMainMenu::UpdateBackgroundPicker(bool& present, bool& previous)
 {
+  static DModelBackground modelBackground = {};
+
   if (previous != present)
   {
     if (present == true)
     {
-      MGuiManager::CreateGui<FGuiBackground>("Background");
+      MGuiManager::CreateGui<FGuiBackground>("Background", std::ref(modelBackground));
     }
     else
     {

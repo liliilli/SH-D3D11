@@ -323,11 +323,11 @@ int WINAPI WinMain(
       auto fragment = 
         gpuTime.CheckFragment("Overall", ownGpuStartFrameQuery.Get(), ownGpuEndFrameQuery.Get());
 
-      auto* background  = MGuiManager::GetGui("Background");
+      auto* background = MGuiManager::GetGui("Background");
       static dy::math::DVector3<dy::math::TReal> bgCol = {0};
       if (background != nullptr)
       {
-        auto& bgModel     = static_cast<DModelBackground&>(background->GetModel());
+        auto& bgModel = static_cast<DModelBackground&>(background->GetModel());
         bgCol = bgModel.mBackgroundColor; 
       }
 

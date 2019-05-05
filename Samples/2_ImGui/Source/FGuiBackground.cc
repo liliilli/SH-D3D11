@@ -16,15 +16,16 @@
 #include <imgui.h>
 #include <MTimeChecker.h>
 
-FGuiBackground::FGuiBackground()
+FGuiBackground::FGuiBackground(DModelBackground& model)
 {
-  this->mModel = std::make_unique<DModelBackground>();
+  this->mModel = &model;
+  this->mIsIndirect = true;
   this->SetVisibility(true);
 }
 
 void FGuiBackground::Render()
 {
-  auto& model = static_cast<DModelBackground&>(*this->mModel);
+  auto& model = static_cast<DModelBackground&>(this->GetModel());
 
   // Create a window called "Hello, world!" and append into it.
   ImGui::PushID("AA");

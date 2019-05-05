@@ -12,7 +12,7 @@
 /// SOFTWARE.
 ///
 
-#include <IGuiFrame.h>
+#include <IGuiFrameModel.h>
 #include <IGuiModel.h>
 
 #include <Math/Type/Math/DVector4.h>
@@ -23,10 +23,10 @@ public:
   dy::math::DVector3<dy::math::TReal> mBackgroundColor = {};
 };
 
-class FGuiBackground final : public IGuiFrame
+class FGuiBackground final : public IGuiFrameModel<DModelBackground>
 {
 public:
-  FGuiBackground();
+  FGuiBackground(DModelBackground& model);
   virtual ~FGuiBackground() = default;
 
   void Render() override final;

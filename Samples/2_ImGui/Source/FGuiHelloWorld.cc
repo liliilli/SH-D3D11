@@ -24,7 +24,7 @@ FGuiHelloWorld::FGuiHelloWorld()
 
 void FGuiHelloWorld::Render()
 {
-  auto& model = static_cast<DModelHelloWorld&>(*this->mModel);
+  auto& model = static_cast<DModelHelloWorld&>(this->GetModel());
 
   // Create a window called "Hello, world!" and append into it.
   ImGui::Begin("Hello, world!"); 
