@@ -12,8 +12,8 @@
 /// SOFTWARE.
 ///
 
-template <typename TType>
-IGuiFrame* MGuiManager::CreateGui(const std::string& guiName)
+template <typename TType, typename... TArgs>
+IGuiFrame* MGuiManager::CreateGui(const std::string& guiName, TArgs&&... args)
 {
   static_assert(
     std::is_base_of_v<IGuiFrame, TType>, 
@@ -24,7 +24,9 @@ IGuiFrame* MGuiManager::CreateGui(const std::string& guiName)
     return nullptr;
   }
 
-  auto [it, isSucceeded] = mGuis.try_emplace(guiName, std::make_unique<TType>());
+  auto [it, isSucceeded] = mGuis.try_emplace(
+    guiName, 
+    std::make_unique<TType>(std::forward<TArgs>(args)...));
   assert(isSucceeded == true);
 
   return it->second.get();

@@ -38,8 +38,8 @@ public:
   /// @brief Create GUI with IGuiFrame derived type and guiName.
   /// If there is already exist with guiName in container, do nothing but return nullptr.
   /// Otherwise (If successful) return created gui instance pointer.
-  template <typename TType>
-  static IGuiFrame* CreateGui(const std::string& guiName);
+  template <typename TType, typename... TArgs>
+  static IGuiFrame* CreateGui(const std::string& guiName, TArgs&&... args);
 
   /// @brief Get GUI instance pointer with guiName.
   /// If item is not exist, just return nullptr. 
