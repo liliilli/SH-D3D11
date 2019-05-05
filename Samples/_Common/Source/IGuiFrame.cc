@@ -22,13 +22,3 @@ bool IGuiFrame::IsVisible() const noexcept
 {
   return this->mIsVisible;
 }
-
-bool IGuiFrame::HasModel() const noexcept
-{
-  return this->mModel != nullptr;
-}
-
-IGuiModel& IGuiFrame::GetModel()
-{
-  return *this->mModel;
-}

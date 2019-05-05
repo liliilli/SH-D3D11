@@ -16,7 +16,7 @@
 #include <unordered_map>
 #include <Math/Type/Micellanous/DTristateBool.h>
 
-#include <IGuiModel.h>
+class IGuiModel;
 
 /// @interface IGuiFrame
 /// @brief Interface of wrapping ImGui frames.
@@ -33,10 +33,10 @@ public:
   [[nodiscard]] bool IsVisible() const noexcept;
 
   /// @brief Check frame has model instance.
-  [[nodiscard]] bool HasModel() const noexcept;
+  [[nodiscard]] virtual bool HasModel() const noexcept = 0;
 
   /// @brief Get model reference.
-  IGuiModel& GetModel();
+  virtual IGuiModel& GetModel() = 0;
 
   /// @brief Render GUI.
   virtual void Render() = 0;
@@ -44,8 +44,6 @@ public:
 protected:
   /// @brief Visibility variable.
   dy::math::DTristateBool mIsVisible = {true, false};
-  /// @brief Model instance.
-  std::unique_ptr<IGuiModel> mModel;
 #if 0
   /// @brief
   std::unordered_map<std::string, std::unique_ptr<IGuiFrame>> mChildGuis;
