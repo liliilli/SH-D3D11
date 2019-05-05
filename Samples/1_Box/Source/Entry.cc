@@ -365,10 +365,39 @@ int WINAPI WinMain(
   const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
   mD3DImmediateContext->OMSetBlendState(&ownBlendState.Get(), blendFactor, 0xFFFFFFFF);
 
+  /// TEMPORARY :: QUERY for GPU time.
+  // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3d11/nf-d3d11-id3d11device-createquery
+  IComOwner<ID3D11Query> ownDisjointQuery = nullptr;
+  {
+    D3D11_QUERY_DESC queryDesc;
+    queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+    queryDesc.MiscFlags = 0;
+
+    mD3DDevice->CreateQuery(&queryDesc, &ownDisjointQuery);
+  }
+
+  IComOwner<ID3D11Query> ownGpuStartFrameQuery = nullptr;
+  {
+    D3D11_QUERY_DESC queryDesc;
+    queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+    queryDesc.MiscFlags = 0;
+
+    mD3DDevice->CreateQuery(&queryDesc, &ownGpuStartFrameQuery);
+  }
+
+  IComOwner<ID3D11Query> ownGpuEndFrameQuery = nullptr;
+  {
+    D3D11_QUERY_DESC queryDesc;
+    queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+    queryDesc.MiscFlags = 0;
+
+    mD3DDevice->CreateQuery(&queryDesc, &ownGpuEndFrameQuery);
+  }
+
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  ImGui::GetIO();
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
@@ -381,11 +410,16 @@ int WINAPI WinMain(
   ImGui_ImplDX11_Init(mD3DDevice, mD3DImmediateContext);
   platform->SetPreProcessCallback(ImGui_ImplWin32_WndProcHandler);
 
+  float msGpuFrame = 0.0f;
+
   // Loop
 	while (platform->CanShutdown() == false)
 	{
-    auto _ = MTimeChecker::CheckCpuTime("CpuFrame");
     platform->PollEvents();
+
+    auto _ = MTimeChecker::CheckCpuTime("CpuFrame");
+    mD3DImmediateContext->Begin(&ownDisjointQuery.Get());
+    mD3DImmediateContext->End(&ownGpuStartFrameQuery.Get());
 
     // D3D Routine
     mD3DImmediateContext->ClearRenderTargetView(&mRenderTargetView.Get(), colors[0].data());
@@ -425,6 +459,7 @@ int WINAPI WinMain(
         1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::Text("CPU Average frame %.3f ms/frame",
         MTimeChecker::Get("CpuFrame").GetAverage().count() * 1000.0);
+      ImGui::Text("GPU Frame %.3f ms/frame", msGpuFrame);
       ImGui::End();
     }
 
@@ -434,6 +469,29 @@ int WINAPI WinMain(
 
     // Present the back buffer to the screen.
     HR(mD3DSwapChain->Present(0, 0));
+    mD3DImmediateContext->End(&ownGpuEndFrameQuery.Get());
+    mD3DImmediateContext->End(&ownDisjointQuery.Get());
+
+    // Collect GPU Time stamps
+    {
+      while (mD3DImmediateContext->GetData(&ownDisjointQuery.Get(), nullptr, 0, 0) == S_FALSE);
+
+      // Check whether timestamps were disjoint during the last frame
+      D3D11_QUERY_DATA_TIMESTAMP_DISJOINT tsDisjoint;
+      mD3DImmediateContext->GetData(&ownDisjointQuery.Get(), &tsDisjoint, sizeof(tsDisjoint), 0);
+      if (tsDisjoint.Disjoint)
+      {
+        continue;
+      }
+
+      // Get All the timestamps.
+      UINT64 tsBeginFrame, tsEndFrame;
+      mD3DImmediateContext->GetData(&ownGpuStartFrameQuery.Get(), &tsBeginFrame, sizeof(UINT64), 0);
+      mD3DImmediateContext->GetData(&ownGpuEndFrameQuery.Get(), &tsEndFrame, sizeof(UINT64), 0);
+
+      // Convert to real time (ms).
+      msGpuFrame = float(tsEndFrame - tsBeginFrame) / float(tsDisjoint.Frequency) * 1000.0f;
+    }
 	}
 
   ImGui_ImplDX11_Shutdown();

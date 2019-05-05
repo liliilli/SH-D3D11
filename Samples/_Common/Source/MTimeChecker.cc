@@ -13,8 +13,8 @@
 
 #include <MTimeChecker.h>
 
-std::unordered_map<std::string, std::unique_ptr<FTimeContainer>> 
-MTimeChecker::mTimerContainer;
+MTimeChecker::TCpuContainer   MTimeChecker::mTimerContainer;
+MTimeChecker::TD3D11Container MTimeChecker::mD3D11TimeContainer;
 
 FCpuTimeHandle MTimeChecker::CheckCpuTime(const std::string& tagName)
 {
@@ -26,7 +26,28 @@ FCpuTimeHandle MTimeChecker::CheckCpuTime(const std::string& tagName)
   return std::move(FCpuTimeHandle{*mTimerContainer[tagName]});
 }
 
+FD3D11TimeHandle MTimeChecker::CheckGpuD3D11Time(
+  const std::string& tagName,
+  ID3D11Query& disjointQuery,
+  ID3D11DeviceContext& deviceContext,
+  bool isUpdateDeferred)
+{
+  if (mTimerContainer.find(tagName) == mTimerContainer.end())
+  {
+    mD3D11TimeContainer[tagName] = std::make_unique<FD3D11TimeContainer>();
+  }
+
+  return std::move(
+    FD3D11TimeHandle{*mD3D11TimeContainer[tagName], disjointQuery, deviceContext, isUpdateDeferred}
+  );
+}
+
 const FTimeContainer& MTimeChecker::Get(const std::string& tagName)
 {
   return *mTimerContainer.at(tagName);
+}
+
+const FD3D11TimeContainer& MTimeChecker::GetGpuD3D11(const std::string& tagName)
+{
+  return *mD3D11TimeContainer.at(tagName);
 }

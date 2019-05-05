@@ -30,6 +30,9 @@ include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
 set(SOURCE
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FCpuTimeHandle.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11Factory.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeHandle.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeContainer.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeFragment.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FTimeContainer.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Source/MTimeChecker.cc"
 )
