@@ -13,7 +13,12 @@ set(COMMON_INCLUDE "${CMAKE_SOURCE_DIR}\\Samples\\_Common\\Include")
 
 include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
 include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
-AUX_SOURCE_DIRECTORY("${CMAKE_CURRENT_SOURCE_DIR}/Source" SOURCE)
+
+set(SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Source")
+set(SOURCE
+	"${SOURCE_DIRECTORY}/Entry.cc"
+	"${SOURCE_DIRECTORY}/FGuiHelloWorld.cc"
+)
 
 set(IMGUI_SOURCE
 	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui.cpp"

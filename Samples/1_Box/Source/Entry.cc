@@ -31,8 +31,10 @@
 #include <IComBorrow.h>
 #include <FD3D11Factory.h>
 #include <MTimeChecker.h>
+#include <MGuiManager.h>
 
 #include <StringUtil/XUtility.h>
+#include <FGuiHelloWorld.h>
 
 #include <Math/Type/Math/DVector3.h>
 #include <Math/Type/Math/DVector4.h>
@@ -365,52 +367,39 @@ int WINAPI WinMain(
   const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
   mD3DImmediateContext->OMSetBlendState(&ownBlendState.Get(), blendFactor, 0xFFFFFFFF);
 
-  /// TEMPORARY :: QUERY for GPU time.
+  // Make timestamp queries (disjoint and start-end queries)
   // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3d11/nf-d3d11-id3d11device-createquery
-  IComOwner<ID3D11Query> ownDisjointQuery = nullptr;
-  {
-    D3D11_QUERY_DESC queryDesc;
-    queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
-    queryDesc.MiscFlags = 0;
-
-    mD3DDevice->CreateQuery(&queryDesc, &ownDisjointQuery);
-  }
-
-  IComOwner<ID3D11Query> ownGpuStartFrameQuery = nullptr;
-  {
-    D3D11_QUERY_DESC queryDesc;
-    queryDesc.Query = D3D11_QUERY_TIMESTAMP;
-    queryDesc.MiscFlags = 0;
-
-    mD3DDevice->CreateQuery(&queryDesc, &ownGpuStartFrameQuery);
-  }
-
-  IComOwner<ID3D11Query> ownGpuEndFrameQuery = nullptr;
-  {
-    D3D11_QUERY_DESC queryDesc;
-    queryDesc.Query = D3D11_QUERY_TIMESTAMP;
-    queryDesc.MiscFlags = 0;
-
-    mD3DDevice->CreateQuery(&queryDesc, &ownGpuEndFrameQuery);
-  }
+  IComOwner<ID3D11Query> ownDisjointQuery       = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), true);
+  IComOwner<ID3D11Query> ownGpuStartFrameQuery  = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), false);
+  IComOwner<ID3D11Query> ownGpuEndFrameQuery    = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), false);
 
   // Setup Dear ImGui context
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGui::GetIO();
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
-
-  // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
-  //ImGui::StyleColorsClassic();
-
-  // Setup Platform/Renderer bindings
-  ImGui_ImplWin32_Init(platform->_GetHandleOf(*optRes));
-  ImGui_ImplDX11_Init(mD3DDevice, mD3DImmediateContext);
-  platform->SetPreProcessCallback(ImGui_ImplWin32_WndProcHandler);
-
-  float msGpuFrame = 0.0f;
+  MGuiManager::Initialize(
+    [&]()
+    {
+      ImGui_ImplWin32_Init(platform->_GetHandleOf(*optRes));
+      ImGui_ImplDX11_Init(mD3DDevice, mD3DImmediateContext);
+      platform->SetPreProcessCallback(ImGui_ImplWin32_WndProcHandler);
+    },
+    [&]()
+    {
+      ImGui_ImplDX11_Shutdown();
+      ImGui_ImplWin32_Shutdown();
+      ImGui::DestroyContext();
+    }
+  );
+  MGuiManager::SetRenderCallbacks(
+    [] {
+      // Start the Dear ImGui frame
+      ImGui_ImplDX11_NewFrame();
+      ImGui_ImplWin32_NewFrame();
+      ImGui::NewFrame();
+    },
+    [] {
+      ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    }
+  );
+  MGuiManager::CreateGui<FGuiHelloWorld>("Hello");
 
   // Loop
 	while (platform->CanShutdown() == false)
@@ -418,8 +407,10 @@ int WINAPI WinMain(
     platform->PollEvents();
 
     auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
-    auto gpuTime = MTimeChecker::CheckGpuD3D11Time("GpuFrame", 
-      ownDisjointQuery.Get(), mD3DImmediateContext.Get(), false);
+    auto gpuTime = MTimeChecker::CheckGpuD3D11Time(
+      "GpuFrame", 
+      ownDisjointQuery.Get(), mD3DImmediateContext.Get(), 
+      false);
 
     {
       auto fragment = 
@@ -437,55 +428,19 @@ int WINAPI WinMain(
       mD3DImmediateContext->PSSetShader(&ownPsShader.Get(), nullptr, 0);
       mD3DImmediateContext->DrawIndexed(3, 0, 0);
 
-      // Start the Dear ImGui frame
-      ImGui_ImplDX11_NewFrame();
-      ImGui_ImplWin32_NewFrame();
-      ImGui::NewFrame();
-
-      // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-      {
-        static float f = 0.0f;
-        static int counter = 0;
-
-        ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
-        ImGui::Text("This is some useful text.");  // Display some text (you can use a format strings too)
-
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-        // Buttons return true when clicked (most widgets return true when edited/activated)
-        if (ImGui::Button("Button")) 
-        {
-          counter++;
-        }
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);
-
-        ImGui::Text(
-          "Application average of ImGui %.3f ms/frame (%.1f FPS)", 
-          1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::Text("CPU Average frame %.3f ms/frame",
-          MTimeChecker::Get("CpuFrame").GetAverage().count() * 1000.0);
-
-        if (MTimeChecker::GetGpuD3D11("GpuFrame").HasFragment("Overall") == true)
-        {
-          ImGui::Text("GPU Frame %.3f ms/frame", 
-            MTimeChecker::GetGpuD3D11("GpuFrame")["Overall"].GetRecent().count() * 1000.0);
-        }
-        ImGui::End();
-      }
-
-      // Rendering
-      ImGui::Render();
-      ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+      MGuiManager::Render();
 
       // Present the back buffer to the screen.
       HR(mD3DSwapChain->Present(0, 0));
     }
 	}
 
-  ImGui_ImplDX11_Shutdown();
-  ImGui_ImplWin32_Shutdown();
-  ImGui::DestroyContext();
+  {
+    const auto flag = MGuiManager::RemoveGui("Hello");
+    assert(flag == true);
+  }
 
+  MGuiManager::Shutdown();
   platform->RemoveAllWindow();
   platform->RemoveConsoleWindow();
   platform->ReleasePlatform();
