@@ -13,8 +13,10 @@
 ///
 
 #include <variant>
+#include <stdexcept>
 #include <IGuiFrame.h>
 #include <IGuiModel.h>
+#include <DGuiNoneModel.h>
 
 template <typename TType>
 class IGuiFrameModel : public IGuiFrame
@@ -23,25 +25,14 @@ public:
   virtual ~IGuiFrameModel() = default;
 
   /// @brief Check frame has model instance.
-  [[nodiscard]] virtual bool HasModel() const noexcept override final
-  {
-    return this->mModel.index() != 0;
-  }
+  [[nodiscard]] bool HasModel() const noexcept override final;
 
-  /// @brief 
-  virtual IGuiModel& GetModel() override final
-  {
-    if (this->mModel.index() == 0) { throw 0; }
+  /// @brief Get model reference.
+  /// If not exist or model has not been initialized, just throw error.
+  IGuiModel& GetModel() override final;
 
-    if (this->mIsIndirect == false)
-    {
-      return *std::get<std::unique_ptr<IGuiModel>>(this->mModel);
-    }
-    else
-    {
-      return *std::get<IGuiModel*>(this->mModel);
-    }
-  }
+  /// @brief Destroy GUI instance.
+  void DestroySelf() override final;
 
 protected:
   /// @brief Model instance.
@@ -51,3 +42,21 @@ protected:
   /// If true, mModel has IGuiModel* that is from outside world.
   bool mIsIndirect = false;
 };
+
+template <>
+class IGuiFrameModel<void> : public IGuiFrame
+{
+public:
+  virtual ~IGuiFrameModel() = default;
+
+  /// @brief Check frame has model instance.
+  [[nodiscard]] bool HasModel() const noexcept override final; 
+
+  /// @brief 
+  IGuiModel& GetModel() override final;
+
+  /// @brief Destroy GUI instance.
+  void DestroySelf() override final;
+
+};
+#include <IGuiFrameModel.inl>
