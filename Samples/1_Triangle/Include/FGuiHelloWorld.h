@@ -12,7 +12,7 @@
 /// SOFTWARE.
 ///
 
-#include <IGuiFrame.h>
+#include <IGuiFrameModel.h>
 #include <IGuiModel.h>
 
 class DModelHelloWorld final : public IGuiModel
@@ -22,7 +22,7 @@ public:
   int counter = 0;
 };
 
-class FGuiHelloWorld final : public IGuiFrame
+class FGuiHelloWorld final : public IGuiFrameModel<DModelHelloWorld>
 {
 public:
   FGuiHelloWorld();
