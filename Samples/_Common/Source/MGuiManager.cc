@@ -12,7 +12,15 @@
 ///
 
 #include <MGuiManager.h>
+#include <algorithm>
 #include <imgui.h>
+
+std::function<void(void)> MGuiManager::mInitCallback = nullptr;
+std::function<void(void)> MGuiManager::mShutCallback = nullptr;
+void(*MGuiManager::mPreRenderCallback)(void)   = nullptr;
+void(*MGuiManager::mPostRenderCallback)(void)  = nullptr;
+std::unordered_map<std::string, std::unique_ptr<IGuiFrame>> MGuiManager::mGuis;
+std::vector<std::unique_ptr<IGuiFrame>> MGuiManager::mRemovedGuis;
 
 void MGuiManager::SetRenderCallbacks(
   void(*preRenderCallback)(void),
@@ -45,6 +53,23 @@ void MGuiManager::Initialize(
   mInitCallback = nullptr;
 }
 
+void MGuiManager::Update()
+{
+  // Remove candidate GUI instances.
+  if (mRemovedGuis.empty() == false)
+  {
+    mRemovedGuis.clear();
+  }
+
+  // Remove empty space of GUI list.
+  for (auto it = mGuis.begin(); it != mGuis.end();)
+  {
+    if (it->second != nullptr) { ++it; continue; }
+
+    it = mGuis.erase(it);
+  }
+}
+
 void MGuiManager::Shutdown()
 {
   mShutCallback();
@@ -52,6 +77,7 @@ void MGuiManager::Shutdown()
   mPreRenderCallback  = nullptr;
   mPostRenderCallback = nullptr;
   mGuis.clear();
+  mRemovedGuis.clear();
 }
 
 IGuiFrame* MGuiManager::GetGui(const std::string& guiName)
@@ -67,13 +93,31 @@ IGuiFrame* MGuiManager::GetGui(const std::string& guiName)
 
 bool MGuiManager::RemoveGui(const std::string& guiName)
 {
-  if (mGuis.find(guiName) == mGuis.end())
+  auto it = mGuis.find(guiName); 
+  if (it == mGuis.end())
   {
     return false;
   }
 
-  mGuis.erase(guiName);
+  auto& [string, pGui] = *it;
+  mRemovedGuis.emplace_back(std::move(pGui));
   return true;  
+}
+
+bool MGuiManager::RemoveGui(IGuiFrame& guiInstance)
+{
+  auto it = std::find_if(mGuis.begin(), mGuis.end(), 
+    [pGui = &guiInstance](const decltype(mGuis)::value_type& item)
+    {
+      const auto& [string, smtGui] = item;
+      return smtGui.get() == pGui;
+    }
+  );
+  assert(it != mGuis.end());
+
+  auto& [string, pGui] = *it;
+  mRemovedGuis.emplace_back(std::move(pGui));
+  return true;
 }
 
 void MGuiManager::Render()

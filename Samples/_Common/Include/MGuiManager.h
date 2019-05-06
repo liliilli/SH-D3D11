@@ -14,6 +14,7 @@
 
 #include <functional>
 #include <string>
+#include <cassert>
 #include <IGuiFrame.h>
 
 /// @class MGuiManager
@@ -26,13 +27,16 @@ public:
     void(*preRenderCallback)(void),
     void(*postRenderCallback)(void)
   );
-
-  /// @brief 
+   
+  /// @brief Initialize manager.
   static void Initialize(
     const std::function<void(void)>& initFunc, 
     const std::function<void(void)>& shutFunc);
 
-  /// @brief
+  /// @brief Update manager.
+  static void Update();
+
+  /// @brief Shutdown manager.
   static void Shutdown();
 
   /// @brief Create GUI with IGuiFrame derived type and guiName.
@@ -50,17 +54,23 @@ public:
   /// If successful, return true.
   static bool RemoveGui(const std::string& guiName);
 
+  /// @brief Try to remove GUI instance with guiName.
+  /// This function must be succeeded, or undefined error.
+  static bool RemoveGui(IGuiFrame& guiInstance);
+
   /// @brief Render visible gui list.
   /// Pre-render and Post-render callback function will be called when exist.
   static void Render();
 
 private:
-  inline static std::function<void(void)> mInitCallback = nullptr;
-  inline static std::function<void(void)> mShutCallback = nullptr;
-  inline static void(*mPreRenderCallback)(void)   = nullptr;
-  inline static void(*mPostRenderCallback)(void)  = nullptr;
+  static std::function<void(void)> mInitCallback;
+  static std::function<void(void)> mShutCallback;
+  static void(*mPreRenderCallback)(void);
+  static void(*mPostRenderCallback)(void);
 
   /// @brief
-  inline static std::unordered_map<std::string, std::unique_ptr<IGuiFrame>> mGuis;
+  static std::unordered_map<std::string, std::unique_ptr<IGuiFrame>> mGuis;
+  /// @brief 
+  static std::vector<std::unique_ptr<IGuiFrame>> mRemovedGuis;
 };
 #include <MGuiManager.inl>
