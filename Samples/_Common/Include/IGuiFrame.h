@@ -41,6 +41,9 @@ public:
   /// @brief Render GUI.
   virtual void Render() = 0;
 
+  /// @brief Destory GUI itself.
+  virtual void DestroySelf() = 0;
+
 protected:
   /// @brief Visibility variable.
   dy::math::DTristateBool mIsVisible = {true, false};
