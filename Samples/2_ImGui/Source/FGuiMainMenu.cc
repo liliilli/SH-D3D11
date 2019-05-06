@@ -16,6 +16,8 @@
 #include <imgui.h>
 #include <MGuiManager.h>
 #include <FGuiBackground.h>
+#include <FGuiProfiling.h>
+#include <FGuiAbout.h>
 #include <XPlatform.h>
 
 FGuiMainMenu::FGuiMainMenu()
@@ -51,6 +53,30 @@ void FGuiMainMenu::Render()
           model.mPrevViewBackgroundColorPicker
         );
       }
+
+      if (ImGui::MenuItem("Profiling Window", "", &model.mProfilingWindow))
+      {
+        // Clicked menu-item.
+        this->UpdateProfilingWindow(
+          model.mProfilingWindow,
+          model.mPrevProfilingWindow
+        );
+      }
+
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Help"))
+    {
+      if (ImGui::MenuItem("About"))
+      {
+        // Clicked menu-item.
+        if (MGuiManager::GetGui("About") == nullptr)
+        {
+          MGuiManager::CreateGui<FGuiAbout>("About");
+        }
+      }
+
       ImGui::EndMenu();
     }
 
@@ -76,3 +102,21 @@ void FGuiMainMenu::UpdateBackgroundPicker(bool& present, bool& previous)
     previous = present;
   }
 }
+
+void FGuiMainMenu::UpdateProfilingWindow(bool& present, bool& previous)
+{
+  if (previous != present)
+  {
+    if (present == true)
+    {
+      MGuiManager::CreateGui<FGuiProfiling>("Profiling");
+    }
+    else
+    {
+      MGuiManager::RemoveGui("Profiling");
+    }
+
+    previous = present;
+  }
+}
+

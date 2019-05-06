@@ -32,6 +32,8 @@ set(SOURCE
 	"${SOURCE_DIRECTORY}/FGuiHelloWorld.cc"
 	"${SOURCE_DIRECTORY}/FGuiBackground.cc"
 	"${SOURCE_DIRECTORY}/FGuiMainMenu.cc"
+	"${SOURCE_DIRECTORY}/FGuiProfiling.cc"
+	"${SOURCE_DIRECTORY}/FGuiAbout.cc"
 	"${SOURCE_DIRECTORY}/XPlatform.cc"
 )
 

@@ -15,28 +15,21 @@
 #include <IGuiFrameModel.h>
 #include <IGuiModel.h>
 
-class DModelMainMenu final : public IGuiModel
+class DModelAbout;
+
+class FGuiAbout final : public IGuiFrameModel<DModelAbout>
 {
 public:
-  bool mViewBackgroundColorPicker = false;
-  bool mProfilingWindow = false;
+  FGuiAbout();
+  virtual ~FGuiAbout() = default;
 
-private:
-  bool mPrevViewBackgroundColorPicker = false;
-  bool mPrevProfilingWindow = false;
-
-  friend class FGuiMainMenu;
+  void Render() override final;
 };
 
-class FGuiMainMenu final : public IGuiFrameModel<DModelMainMenu>
+class DModelAbout final : public IGuiModel
 {
-public:
-  FGuiMainMenu();
-  virtual ~FGuiMainMenu() = default;
-
 private:
-  void Render() override final;
-  void UpdateBackgroundPicker(bool& present, bool& previous);
-  void UpdateProfilingWindow(bool& present, bool& previous);
+  bool mOpended = true;
+  friend class FGuiAbout;
 };
 

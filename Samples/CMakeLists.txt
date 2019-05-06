@@ -13,5 +13,5 @@
 cmake_minimum_required (VERSION 3.8)
 add_subdirectory(_Common)
 add_subdirectory(0_HelloWorld)
-add_subdirectory(1_Triangle)
+# add_subdirectory(1_Triangle)
 add_subdirectory(2_ImGui)

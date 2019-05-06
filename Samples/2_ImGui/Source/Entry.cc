@@ -310,25 +310,25 @@ int WINAPI WinMain(
   // Loop
 	while (platform->CanShutdown() == false)
 	{
-    platform->PollEvents();
-
     auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
+    platform->PollEvents();
+  
+    MGuiManager::Update();
+    auto* background = MGuiManager::GetGui("Background");
+    static dy::math::DVector3<dy::math::TReal> bgCol = {0};
+    if (background != nullptr)
+    {
+      auto& bgModel = static_cast<DModelBackground&>(background->GetModel());
+      bgCol = bgModel.mBackgroundColor; 
+    }
+
     auto gpuTime = MTimeChecker::CheckGpuD3D11Time(
       "GpuFrame", 
       ownDisjointQuery.Get(), mD3DImmediateContext.Get(), 
       false);
-
     {
       auto fragment = 
         gpuTime.CheckFragment("Overall", ownGpuStartFrameQuery.Get(), ownGpuEndFrameQuery.Get());
-
-      auto* background = MGuiManager::GetGui("Background");
-      static dy::math::DVector3<dy::math::TReal> bgCol = {0};
-      if (background != nullptr)
-      {
-        auto& bgModel = static_cast<DModelBackground&>(background->GetModel());
-        bgCol = bgModel.mBackgroundColor; 
-      }
 
       mD3DImmediateContext->ClearRenderTargetView(
         &mRenderTargetView.Get(), 
@@ -338,9 +338,7 @@ int WINAPI WinMain(
         1.0f,
         0);
 
-      //mD3DImmediateContext->RSSetState(&ownRasterState.Get());
       MGuiManager::Render();
-
       // Present the back buffer to the screen.
       HR(mD3DSwapChain->Present(0, 0));
     }

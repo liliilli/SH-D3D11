@@ -14,29 +14,22 @@
 
 #include <IGuiFrameModel.h>
 #include <IGuiModel.h>
+#include <Math/Type/Micellanous/DUuid.h>
 
-class DModelMainMenu final : public IGuiModel
+class DModelProfiling;
+class FGuiProfiling final : public IGuiFrameModel<DModelProfiling>
 {
 public:
-  bool mViewBackgroundColorPicker = false;
-  bool mProfilingWindow = false;
+  FGuiProfiling();
+  virtual ~FGuiProfiling() = default;
 
-private:
-  bool mPrevViewBackgroundColorPicker = false;
-  bool mPrevProfilingWindow = false;
-
-  friend class FGuiMainMenu;
+  void Render() override final;
 };
 
-class FGuiMainMenu final : public IGuiFrameModel<DModelMainMenu>
+class DModelProfiling final : public IGuiModel
 {
-public:
-  FGuiMainMenu();
-  virtual ~FGuiMainMenu() = default;
-
 private:
-  void Render() override final;
-  void UpdateBackgroundPicker(bool& present, bool& previous);
-  void UpdateProfilingWindow(bool& present, bool& previous);
+  std::string mUuid = ::dy::math::DUuid{true}.ToString();
+  friend class FGuiProfiling;
 };
 
