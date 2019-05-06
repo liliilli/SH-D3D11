@@ -16,6 +16,7 @@
 #include <imgui.h>
 #include <MGuiManager.h>
 #include <FGuiBackground.h>
+#include <XPlatform.h>
 
 FGuiMainMenu::FGuiMainMenu()
 {
@@ -35,7 +36,7 @@ void FGuiMainMenu::Render()
       if (ImGui::MenuItem("Exit")) 
       {
         // Clicked menu-item
-        
+        platform->TryShutdown();
       };
       ImGui::EndMenu();
     }

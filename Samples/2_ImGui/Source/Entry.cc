@@ -40,11 +40,10 @@
 
 #include <FWindowsPlatform.h>
 #include <PLowInputMousePos.h>
+#include <XPlatform.h>
 
 // Win32 message handler
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-std::unique_ptr<dy::APlatformBase> platform = nullptr;
 
 /// @brief
 std::optional<dy::DWindowHandle>
@@ -58,8 +57,8 @@ CreateMainWindow(const std::string& titleName, unsigned width, unsigned height)
   desc.mIsWindowShouldFocus = true;
   desc.mIsWindowVisible = true;
   desc.mWindowName = "D3D11 2_Imgui";
-  desc.mWindowWidth = 800;
-  desc.mWindowHeight = 600;
+  desc.mWindowWidth = 1280;
+  desc.mWindowHeight = 720;
   
 #ifdef _WIN32
   #ifdef CreateWindow
@@ -96,7 +95,7 @@ int WINAPI WinMain(
   platform = std::make_unique<dy::FWindowsPlatform>();
   platform->InitPlatform();
   platform->CreateConsoleWindow();
-  auto optRes = CreateMainWindow("D3D11 0_HelloWorld", 800, 600);
+  auto optRes = CreateMainWindow("D3D11 0_HelloWorld", 1280, 720);
   assert(optRes.has_value() == true);
 
   const auto& checker = MTimeChecker::Get("CreateMainWindow");
@@ -229,7 +228,7 @@ int WINAPI WinMain(
   std::array<D3D11_RECT, 1> ownRectState =
   {
     D3D11_RECT
-    {0, 0, 800, 600}
+    {0, 0, 1280, 720}
   };
   mD3DImmediateContext->RSSetScissorRects(1, ownRectState.data());
 
