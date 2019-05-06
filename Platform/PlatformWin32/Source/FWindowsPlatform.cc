@@ -725,7 +725,9 @@ bool FWindowsPlatform::UnregisterWindowClassWin32()
 bool FWindowsPlatform::CanShutdown()
 {
   auto& handleContainer = static_cast<FWindowsHandles&>(*this->mHandle);
-  return handleContainer.mWindowHandles.empty() == true;
+  return 
+      handleContainer.mWindowHandles.empty() == true
+  ||  this->mShouldShutdown == true;
 }
 
 void* FWindowsPlatform::_GetHandleOf(const DWindowHandle& handle)

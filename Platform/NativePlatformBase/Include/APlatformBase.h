@@ -147,12 +147,17 @@ public:
   /// This function could be not implemented by OS.
   virtual void SetPreProcessCallback(void* callback) {};
 
+  /// @brief Try shutdown application.
+  /// If already called shutdown switch, just return with false.
+  bool TryShutdown();
+
 protected:
   std::unique_ptr<AHandlesBase>     mHandle     = nullptr;
   std::unique_ptr<ADebugBase>       mDebug      = nullptr;
   std::unique_ptr<AProfilingBase>   mProfiling  = nullptr;
   std::unique_ptr<base::ALowInput>  mLowInput   = nullptr;
   bool mIsConsoleWindowCreated = false;
+  bool mShouldShutdown = false;
 
 private:
   /// @brief Create background (helper) window.

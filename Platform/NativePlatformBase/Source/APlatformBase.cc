@@ -47,4 +47,11 @@ bool APlatformBase::IsConsoleWindowCreated() noexcept
   return this->mIsConsoleWindowCreated;
 }
 
+bool APlatformBase::TryShutdown()
+{
+  if (this->mShouldShutdown == true) { return false; }
+
+  this->mShouldShutdown = true;
+  return true;
+}
 } /// ::dy namespace
