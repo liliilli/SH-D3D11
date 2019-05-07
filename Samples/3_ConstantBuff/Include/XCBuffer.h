@@ -12,21 +12,7 @@
 /// SOFTWARE.
 ///
 
-#include <IGuiFrameModel.h>
-#include <IGuiModel.h>
-
-class DModelDescription final : public IGuiModel
+struct DCbScale final
 {
-public:
-  float f = 0.0f;
-  int counter = 0;
-};
-
-class FGuiDescription final : public IGuiFrameModel<DModelDescription>
-{
-public:
-  FGuiDescription();
-  virtual ~FGuiDescription() = default;
-
-  void Render() override final;
+  alignas(16) float mScale;
 };

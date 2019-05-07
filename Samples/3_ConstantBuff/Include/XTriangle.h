@@ -1,3 +1,4 @@
+#pragma once
 ///
 /// MIT License
 /// Copyright (c) 2018-2019 Jongmin Yun
@@ -11,14 +12,18 @@
 /// SOFTWARE.
 ///
 
-#include <FGuiDescription.h>
+#include <XBuffer.h>
 
-FGuiDescription::FGuiDescription()
-{
+inline std::array<DVertex, 3> vertices =
+{ 
+  DVertex
+  { {-1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
+  { {+1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
+  { {+0.0f, +1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f} },
+};
 
-}
-
-void FGuiDescription::Render()
-{
-
-}
+// Create Index Buffer.
+inline std::array<unsigned, 3> indices =
+{ // 1        2        3        4
+  0, 1, 2, 
+};

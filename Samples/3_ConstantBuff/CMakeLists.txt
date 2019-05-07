@@ -29,7 +29,7 @@ include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
 set(SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 set(SOURCE
 	"${SOURCE_DIRECTORY}/XEntry.cc"
-	"${SOURCE_DIRECTORY}/FGuiDescription.cc"
+	"${SOURCE_DIRECTORY}/FGuiWindow.cc"
 	"${SOURCE_DIRECTORY}/XLocalCommon.cc"
 	"${SOURCE_DIRECTORY}/XPlatform.cc"
 )

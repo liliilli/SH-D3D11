@@ -28,9 +28,11 @@
 #include <FD3D11Factory.h>
 #include <MTimeChecker.h>
 #include <MGuiManager.h>
+#include <XTriangle.h>
+#include <XCBuffer.h>
 
 #include <StringUtil/XUtility.h>
-#include <FGuiDescription.h>
+#include <FGuiWindow.h>
 
 #include <FWindowsPlatform.h>
 #include <PLowInputMousePos.h>
@@ -52,6 +54,10 @@ int WINAPI WinMain(
   auto optRes = CreateMainWindow("D3D11 3_ConstantBuff", 1280, 720);
   assert(optRes.has_value() == true);
 
+  //!
+  //! D3D11 Setting up
+  //!
+
   // Crate D3D11 Device & Context
   auto optDeviceContext = FD3D11Factory::CreateD3D11Device(*platform);
   assert(optDeviceContext.has_value() == true);
@@ -62,52 +68,19 @@ int WINAPI WinMain(
   // Get width and height of main window client region.
   const auto width  = platform->GetWindowWidth(*optRes);
   const auto height = platform->GetWindowHeight(*optRes);
+  HWND mainWindowHandle = static_cast<HWND>(platform->_GetHandleOf(*optRes));
 
   // Describe Swap chain.
   // https://bell0bytes.eu/the-swap-chain/
-  DXGI_SWAP_CHAIN_DESC sd;
-  {
-    // Describe frame-buffer format.
-    sd.BufferDesc.Width   = width;
-    sd.BufferDesc.Height  = height;
-    sd.BufferDesc.RefreshRate.Numerator   = 60; // Want 60 FPS
-    sd.BufferDesc.RefreshRate.Denominator = 1;// When Numerator is not 1 or 0, Denominator must be 1.
-    sd.BufferDesc.Format  = DXGI_FORMAT_R8G8B8A8_UNORM;
-    sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED; 
-    sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-
-    sd.SampleDesc.Count   = 1;
-    sd.SampleDesc.Quality = 0;
-
-    // Describe overall properties.
-    sd.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.BufferCount  = 1; // The count of `back buffer`.
-    sd.OutputWindow = static_cast<HWND>(platform->_GetHandleOf(*optRes)); // HWND to display.
-    sd.Windowed     = true;
-    sd.SwapEffect   = DXGI_SWAP_EFFECT_DISCARD; // Discard swapped old buffer.
-    sd.Flags        = 0; 
-  }
+  DXGI_SWAP_CHAIN_DESC sd = FD3D11Factory::GetDefaultSwapChainDesc(width, height, mainWindowHandle);
 
   // Create swap chain.
   IComOwner<IDXGISwapChain> mD3DSwapChain = nullptr;
-  {
-    // To call creating swap-chain function from DXGIFactory,
-    // we must get DXGI device, adapter, and etc... using querying.
-    IComOwner<IDXGIDevice> dxgiDevice = nullptr;
-    HR(mD3DDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice));
-
-    IComOwner<IDXGIAdapter> dxgiAdapter = nullptr;
-    HR(dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter));
-
-    IComOwner<IDXGIFactory> dxgiFactory = nullptr;
-    HR(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
-
-    // Create swap chain.
-    HR(dxgiFactory->CreateSwapChain(&mD3DDevice.Get(), &sd, &mD3DSwapChain));
-    HR(dxgiFactory->MakeWindowAssociation(
-      static_cast<HWND>(platform->_GetHandleOf(*optRes)),
-      DXGI_MWA_NO_WINDOW_CHANGES));
-  }
+  FD3D11Factory::CreateD3D11SwapChain(
+    mD3DDevice.Get(), 
+    static_cast<HWND>(platform->_GetHandleOf(*optRes)),
+    sd,
+    mD3DSwapChain);
 
   // Create render target view (RTV).
   IComOwner<ID3D11RenderTargetView> mRenderTargetView = nullptr;
@@ -120,23 +93,7 @@ int WINAPI WinMain(
   
   // Descript Depth/Stencil Buffer and View descriptors.
   // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_texture2d_desc
-  D3D11_TEXTURE2D_DESC mDepthStencilDesc;
-  {
-    // Depth/Stencil Render buffer (texture) descript.
-    mDepthStencilDesc.Width = width;
-    mDepthStencilDesc.Height = height;
-    mDepthStencilDesc.MipLevels = 1;
-    mDepthStencilDesc.ArraySize = 1;
-    mDepthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // Depth 24, Stencil 8.
-
-    mDepthStencilDesc.SampleDesc.Count = 1;
-    mDepthStencilDesc.SampleDesc.Quality = 0;
-
-    mDepthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-    mDepthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    mDepthStencilDesc.CPUAccessFlags = 0; 
-    mDepthStencilDesc.MiscFlags = 0;
-  }
+  D3D11_TEXTURE2D_DESC mDepthStencilDesc = FD3D11Factory::GetDefaultDepthStencilDesc(width, height);
 
   // Create Depth/Stencil View (DSV)
   IComOwner<ID3D11Texture2D> mDepthStencilBuffer = nullptr;
@@ -218,33 +175,154 @@ int WINAPI WinMain(
   const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
   mD3DImmediateContext->OMSetBlendState(&ownBlendState.Get(), blendFactor, 0xFFFFFFFF);
 
+  //!
+  //! Shader Compilation 
+  //!
+
+  IComOwner<ID3D11VertexShader> ownVertexShader = nullptr;
+  IComOwner<ID3D11InputLayout> ownVsLayout = nullptr;
+  {
+    IComOwner<ID3DBlob> ownVsBlob = nullptr;
+    HR(FD3D11Factory::CompileShaderFromFile(
+      *platform,
+      "../../Resource/Shader.fx", "VS", "vs_5_0", &ownVsBlob));
+
+    HR(mD3DDevice->CreateVertexShader(
+      ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(), 
+      nullptr, 
+      &ownVertexShader));
+   
+    // Create Vertex shader input layout.
+    // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_input_element_desc
+    std::array<D3D11_INPUT_ELEMENT_DESC, 2> vertexDesc =
+    {
+      decltype(vertexDesc)::value_type
+      {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA , 0},
+      {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+
+    HR(mD3DDevice->CreateInputLayout(
+      vertexDesc.data(), static_cast<UINT>(vertexDesc.size()), 
+      ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(),
+      &ownVsLayout));
+
+    ownVsBlob.Release();
+  }
+  // Set layout into logical device context.
+  mD3DImmediateContext->IASetInputLayout(&ownVsLayout.Get());
+
+  // Compile Pixel Shader 
+  // "PS" is entry point.
+  IComOwner<ID3D11PixelShader> ownPsShader = nullptr;
+  {
+    IComOwner<ID3DBlob> ownPsBlob = nullptr;
+    HR(FD3D11Factory::CompileShaderFromFile(
+      *platform, 
+      "../../Resource/Shader.fx", "PS", "ps_5_0", &ownPsBlob));
+
+    HR(mD3DDevice->CreatePixelShader(
+      ownPsBlob->GetBufferPointer(), ownPsBlob->GetBufferSize(), 
+      nullptr, 
+      &ownPsShader));
+    ownPsBlob.Release();
+  }
+
+  //!
+  //! Mesh Buffer Setting up
+  //!
+
+  // * Build Geometry Buffers.
+  IComOwner<ID3D11Buffer> vBuffer = nullptr;
+  {
+    D3D11_BUFFER_DESC vbDesc;
+    vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
+    vbDesc.ByteWidth = sizeof(vertices);
+    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vbDesc.CPUAccessFlags = 0;
+    vbDesc.MiscFlags = 0;
+    vbDesc.StructureByteStride = 0;
+
+    D3D11_SUBRESOURCE_DATA vbData;
+    vbData.pSysMem = vertices.data();
+
+    HR(mD3DDevice->CreateBuffer(&vbDesc, &vbData, &vBuffer));
+  }
+
+  IComOwner<ID3D11Buffer> iBuffer = nullptr;
+  {
+    D3D11_BUFFER_DESC ibDesc;
+    ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
+    ibDesc.ByteWidth = sizeof(indices);
+    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    ibDesc.CPUAccessFlags = 0;
+    ibDesc.MiscFlags = 0;
+    ibDesc.StructureByteStride = 0;
+
+    D3D11_SUBRESOURCE_DATA ibData;
+    ibData.pSysMem = indices.data();
+
+    HR(mD3DDevice->CreateBuffer(&ibDesc, &ibData, &iBuffer));    
+  }
+
+  IComOwner<ID3D11Buffer> cBuffer = nullptr;
+  {
+    D3D11_BUFFER_DESC desc;
+    desc.Usage      = D3D11_USAGE_DEFAULT;
+    desc.ByteWidth  = sizeof(DCbScale);
+    desc.BindFlags  = D3D11_BIND_CONSTANT_BUFFER;
+    desc.CPUAccessFlags = 0;
+    desc.MiscFlags = 0;
+    desc.StructureByteStride = 0;
+
+    DCbScale initScale;
+    initScale.mScale = 0.5f;
+
+    D3D11_SUBRESOURCE_DATA initData;
+    initData.pSysMem = &initScale;
+    initData.SysMemPitch = 0;
+    initData.SysMemSlicePitch = 0;
+
+    HR(mD3DDevice->CreateBuffer(&desc, &initData, &cBuffer));
+  }
+   
+  // Set topologies.
+  mD3DImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  UINT stride = sizeof(DVertex);
+  UINT offset = 0;
+  mD3DImmediateContext->IASetVertexBuffers(0, 1, &vBuffer, &stride, &offset);
+  mD3DImmediateContext->IASetIndexBuffer(&iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+  mD3DImmediateContext->VSSetConstantBuffers(0, 1, &cBuffer);
+
+  //!
+  //! Queries & ImGui Setting up
+  //!
+
   // Make timestamp queries (disjoint and start-end queries)
   // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3d11/nf-d3d11-id3d11device-createquery
-  IComOwner<ID3D11Query> ownDisjointQuery       = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), true);
-  IComOwner<ID3D11Query> ownGpuStartFrameQuery  = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), false);
-  IComOwner<ID3D11Query> ownGpuEndFrameQuery    = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), false);
+  IComOwner<ID3D11Query> ownDisjointQuery = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), true);
+  auto [ownGpuStartFrameQuery, ownGpuEndFrameQuery] = *FD3D11Factory::CreateTimestampQueryPair(mD3DDevice.Get());
+  auto [ownStartCbUpdate, ownEndCbUpdate] = *FD3D11Factory::CreateTimestampQueryPair(mD3DDevice.Get());
+  auto [ownStartDraw, ownEndDraw] = *FD3D11Factory::CreateTimestampQueryPair(mD3DDevice.Get());
 
   // Setup Dear ImGui context
   SetupGuiSettings(*optRes, (*optDeviceContext).first.Get(), (*optDeviceContext).second.Get());
-  MGuiManager::CreateGui<FGuiDescription>("Description");
+  DModelWindow model;
+  MGuiManager::CreateGui<FGuiWindow>("Window", std::ref(model));
 
   // Loop
 	while (platform->CanShutdown() == false)
 	{
     // Update Routine
-    auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
+    TIME_CHECK_CPU("CpuFrame");
+    //auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
     platform->PollEvents();
   
     MGuiManager::Update();
 
     // Render Routine
-    auto gpuTime = MTimeChecker::CheckGpuD3D11Time(
-      "GpuFrame", 
-      ownDisjointQuery.Get(), mD3DImmediateContext.Get(), 
-      false);
+    TIME_CHECK_D3D11_STALL(gpuTime, "GpuFrame", ownDisjointQuery.Get(), mD3DImmediateContext.Get());
     {
-      auto fragment = 
-        gpuTime.CheckFragment("Overall", ownGpuStartFrameQuery.Get(), ownGpuEndFrameQuery.Get());
+      TIME_CHECK_FRAGMENT(gpuTime, "Overall", ownGpuStartFrameQuery.Get(), ownGpuEndFrameQuery.Get());
 
       mD3DImmediateContext->ClearRenderTargetView(
         &mRenderTargetView.Get(), 
@@ -253,6 +331,23 @@ int WINAPI WinMain(
         D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
         1.0f,
         0);
+
+      // https://bell0bytes.eu/shader-data/
+      {
+        TIME_CHECK_FRAGMENT(gpuTime, "CBuffer", ownStartCbUpdate.Get(), ownEndCbUpdate.Get());
+
+        DCbScale scale;
+        scale.mScale = model.mScale;
+        mD3DImmediateContext->UpdateSubresource(&cBuffer.Get(), 0, nullptr, &scale, 0, 0);
+      }
+
+      mD3DImmediateContext->VSSetShader(&ownVertexShader.Get(), nullptr, 0);
+      mD3DImmediateContext->PSSetShader(&ownPsShader.Get(), nullptr, 0);
+
+      {
+        TIME_CHECK_FRAGMENT(gpuTime, "Draw", ownStartDraw.Get(), ownEndDraw.Get());
+        mD3DImmediateContext->DrawIndexed(3, 0, 0);
+      }
 
       MGuiManager::Render();
       // Present the back buffer to the screen.
