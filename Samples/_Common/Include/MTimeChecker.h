@@ -20,6 +20,7 @@
 #include <FD3D11TimeHandle.h>
 #include <FTimeContainer.h>
 #include <FD3D11TimeContainer.h>
+#include <Math/Common/XGlobalMacroes.h>
 
 struct ID3D11Query;
 struct ID3D11DeviceContext;
@@ -57,3 +58,20 @@ private:
   /// @brief GPU D3D11 Timer container.
   static TD3D11Container mD3D11TimeContainer;
 };
+
+/// @def TIME_CHECK_CPU
+/// @brief Fire CPU checking routine. Fire and forget.
+#define TIME_CHECK_CPU(Name) \
+  auto MATH_TOKEN_PASTE(_, __LINE__) = ::MTimeChecker::CheckCpuTime(#Name)
+
+/// @def TIME_CHECK_D3D11_STALL
+/// @brief Fire GPU disjoint checking routine as D3D11.
+#define TIME_CHECK_D3D11_STALL(Variable, Name, Disjoint, DeviceContext) \
+  auto Variable = ::MTimeChecker::CheckGpuD3D11Time(#Name, Disjoint, DeviceContext, false)
+
+/// @def TIME_CHECK_FRAGMENT
+/// @brief Fire GPU fragment gpu time checking routine by Disjoint Variable.
+/// Fire and forget.
+#define TIME_CHECK_FRAGMENT(Disjoint, Name, StartQuery, EndQuery) \
+  auto MATH_TOKEN_PASTE(_, __LINE__) = Disjoint.CheckFragment( \
+    #Name, StartQuery, EndQuery)
