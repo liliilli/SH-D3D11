@@ -47,6 +47,10 @@ public:
     unsigned width,
     unsigned height,
     HWND pOutputWindowHandle);
+
+  /// @brief Get default depth stencil texture2D descriptor with (width, height).
+  /// FORMAT will be D24_UNORM_S8_UINT.
+  static D3D11_TEXTURE2D_DESC GetDefaultDepthStencilDesc(unsigned width, unsigned height);
   
   /// @brief Try create D3D11 default swap-chain.
   static HRESULT CreateD3D11SwapChain(
@@ -60,5 +64,10 @@ public:
   static std::optional<IComOwner<ID3D11Query>> CreateTimestampQuery(
     ID3D11Device& device,
     bool isDisjoint);
+
+  /// @brief Try to create a pair of timestamp fragment (start, end).
+  /// If failed, just return nullopt.
+  static std::optional<std::pair<IComOwner<ID3D11Query>, IComOwner<ID3D11Query>>>
+  CreateTimestampQueryPair(ID3D11Device& device);
 };
 

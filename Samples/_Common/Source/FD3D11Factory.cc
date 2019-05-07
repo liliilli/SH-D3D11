@@ -212,6 +212,36 @@ HRESULT FD3D11Factory::CreateD3D11SwapChain(
   return S_OK;
 }
 
+D3D11_TEXTURE2D_DESC FD3D11Factory::GetDefaultDepthStencilDesc(unsigned width, unsigned height)
+{
+  static bool isInitialized = false;
+  static D3D11_TEXTURE2D_DESC desc = {};
+
+  if (isInitialized == false)
+  {
+    // Depth/Stencil Render buffer (texture) descript.
+    desc.Width = 0;
+    desc.Height = 0;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // Depth 24, Stencil 8.
+
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    desc.CPUAccessFlags = 0; 
+    desc.MiscFlags = 0;
+
+    isInitialized = true;
+  }
+
+  desc.Width = width;
+  desc.Height = height;
+  return desc;
+}
+
 std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
   ID3D11Device& device,
   bool isDisjoint)
@@ -229,4 +259,29 @@ std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
   }
 
   return result;
+}
+
+std::optional<std::pair<IComOwner<ID3D11Query>, IComOwner<ID3D11Query>>>
+FD3D11Factory::CreateTimestampQueryPair(ID3D11Device& device)
+{
+  IComOwner<ID3D11Query> start  = nullptr;
+  IComOwner<ID3D11Query> end    = nullptr;
+
+  D3D11_QUERY_DESC queryDesc;
+  queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+  queryDesc.MiscFlags = 0;
+
+  if (device.CreateQuery(&queryDesc, &start) != S_OK)
+  {
+    start.Release();
+    return std::nullopt;
+  }
+
+  if (device.CreateQuery(&queryDesc, &end) != S_OK)
+  {
+    end.Release();
+    return std::nullopt;
+  }
+
+  return std::pair{std::move(start), std::move(end)};
 }
