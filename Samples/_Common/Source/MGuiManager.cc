@@ -20,7 +20,8 @@ std::function<void(void)> MGuiManager::mShutCallback = nullptr;
 void(*MGuiManager::mPreRenderCallback)(void)   = nullptr;
 void(*MGuiManager::mPostRenderCallback)(void)  = nullptr;
 std::unordered_map<std::string, std::unique_ptr<IGuiFrame>> MGuiManager::mGuis;
-std::vector<std::unique_ptr<IGuiFrame>> MGuiManager::mRemovedGuis;
+std::vector<std::unique_ptr<IGuiFrame>>                     MGuiManager::mRemovedGuis;
+std::unordered_map<std::string, std::unique_ptr<IGuiModel>> MGuiManager::mSharedModels;
 
 void MGuiManager::SetRenderCallbacks(
   void(*preRenderCallback)(void),
@@ -78,6 +79,7 @@ void MGuiManager::Shutdown()
   mPostRenderCallback = nullptr;
   mGuis.clear();
   mRemovedGuis.clear();
+  mSharedModels.clear();
 }
 
 IGuiFrame* MGuiManager::GetGui(const std::string& guiName)
@@ -117,6 +119,24 @@ bool MGuiManager::RemoveGui(IGuiFrame& guiInstance)
 
   auto& [string, pGui] = *it;
   mRemovedGuis.emplace_back(std::move(pGui));
+  return true;
+}
+
+bool MGuiManager::HasSharedModel(const std::string& modelName)
+{
+  return mSharedModels.find(modelName) != mSharedModels.end(); 
+}
+
+IGuiModel& MGuiManager::GetSharedModel(const std::string& modelName)
+{
+  return *mSharedModels.find(modelName)->second;
+}
+
+bool MGuiManager::RemoveSharedModel(const std::string& modelName)
+{
+  if (HasSharedModel(modelName) == false) { return false; }
+
+  mSharedModels.erase(modelName);
   return true;
 }
 

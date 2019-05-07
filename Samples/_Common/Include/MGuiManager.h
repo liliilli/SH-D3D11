@@ -16,6 +16,7 @@
 #include <string>
 #include <cassert>
 #include <IGuiFrame.h>
+#include <IGuiModel.h>
 
 /// @class MGuiManager
 /// @brief wrapped ImGui OOP management type.
@@ -43,7 +44,7 @@ public:
   /// If there is already exist with guiName in container, do nothing but return nullptr.
   /// Otherwise (If successful) return created gui instance pointer.
   template <typename TType, typename... TArgs>
-  static IGuiFrame* CreateGui(const std::string& guiName, TArgs&&... args);
+  static TType* CreateGui(const std::string& guiName, TArgs&&... args);
 
   /// @brief Get GUI instance pointer with guiName.
   /// If item is not exist, just return nullptr. 
@@ -62,6 +63,24 @@ public:
   /// Pre-render and Post-render callback function will be called when exist.
   static void Render();
 
+  /// @brief Create shared model with IGuiModel derived type and modelName.
+  /// If there is already exist with modelName in container, do nothing but return nullptr.
+  /// Otherwise (If successful) return created shared model instance pointer.
+  template <typename TType, typename... TArgs>
+  static TType* CreateSharedModel(const std::string& modelName, TArgs&&... args);
+
+  /// @brief Check there is a model with modelName.
+  /// This function should be called before call `GetSharedModel` function to avoid error.
+  [[nodiscard]] static bool HasSharedModel(const std::string& modelName);
+
+  /// @brief Get reference of shared model with modelName.
+  /// If not found, do hard undefined behaviour.
+  static IGuiModel& GetSharedModel(const std::string& modelName);
+
+  /// @brief Try to remove shared model with modelName.
+  /// If not found, just do nothing but return false. Otherwise, return true.
+  static bool RemoveSharedModel(const std::string& modelName);
+
 private:
   static std::function<void(void)> mInitCallback;
   static std::function<void(void)> mShutCallback;
@@ -72,5 +91,7 @@ private:
   static std::unordered_map<std::string, std::unique_ptr<IGuiFrame>> mGuis;
   /// @brief 
   static std::vector<std::unique_ptr<IGuiFrame>> mRemovedGuis;
+  /// @brief
+  static std::unordered_map<std::string, std::unique_ptr<IGuiModel>> mSharedModels;
 };
 #include <MGuiManager.inl>

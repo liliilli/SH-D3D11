@@ -13,7 +13,7 @@
 ///
 
 template <typename TType, typename... TArgs>
-IGuiFrame* MGuiManager::CreateGui(const std::string& guiName, TArgs&&... args)
+TType* MGuiManager::CreateGui(const std::string& guiName, TArgs&&... args)
 {
   static_assert(
     std::is_base_of_v<IGuiFrame, TType>, 
@@ -29,5 +29,25 @@ IGuiFrame* MGuiManager::CreateGui(const std::string& guiName, TArgs&&... args)
     std::make_unique<TType>(std::forward<TArgs>(args)...));
   assert(isSucceeded == true);
 
-  return it->second.get();
+  return static_cast<TType*>(it->second.get());
+}
+
+template <typename TType, typename... TArgs>
+TType* MGuiManager::CreateSharedModel(const std::string& modelName, TArgs&&... args)
+{
+  static_assert(
+    std::is_base_of_v<IGuiModel, TType>,
+    "TType is not derived from IGuiModel.");
+
+  if (mSharedModels.find(modelName) != mSharedModels.end())
+  {
+    return nullptr;
+  }
+
+  auto [it, isSucceeded] = mSharedModels.try_emplace(
+    modelName,
+    std::make_unique<TType>(std::forward<TArgs>(args)...));
+  assert(isSucceeded == true);
+
+  return static_cast<TType*>(it->second.get());
 }
