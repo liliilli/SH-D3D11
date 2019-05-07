@@ -150,6 +150,68 @@ FD3D11Factory::CompileShaderFromFile(
   return hr;
 }
 
+DXGI_SWAP_CHAIN_DESC FD3D11Factory::GetDefaultSwapChainDesc(
+  unsigned width,
+  unsigned height,
+  HWND pOutputWindowHandle)
+{
+  static bool isInitialized = false;
+  static DXGI_SWAP_CHAIN_DESC desc = {};
+
+  if (isInitialized == false)
+  {
+    // Describe frame-buffer format.
+    desc.BufferDesc.Width   = 0;
+    desc.BufferDesc.Height  = 0;
+    desc.BufferDesc.RefreshRate.Numerator   = 60; // Want 60 FPS
+    desc.BufferDesc.RefreshRate.Denominator = 1;// When Numerator is not 1 or 0, Denominator must be 1.
+    desc.BufferDesc.Format  = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED; 
+    desc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+
+    desc.SampleDesc.Count   = 1;
+    desc.SampleDesc.Quality = 0;
+
+    // Describe overall properties.
+    desc.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    desc.BufferCount  = 1; // The count of `back buffer`.
+    desc.OutputWindow = nullptr;
+    desc.Windowed     = true;
+    desc.SwapEffect   = DXGI_SWAP_EFFECT_DISCARD; // Discard swapped old buffer.
+    desc.Flags        = 0; 
+
+    isInitialized = true;
+  }
+
+  desc.BufferDesc.Width = width;
+  desc.BufferDesc.Width = height;
+  desc.OutputWindow = pOutputWindowHandle;
+  return desc;
+}
+
+HRESULT FD3D11Factory::CreateD3D11SwapChain(
+  ID3D11Device& device, 
+  HWND windowHandle,
+  DXGI_SWAP_CHAIN_DESC& descriptor,
+  IComOwner<IDXGISwapChain>& ownSwapChainRef)
+{
+  // To call creating swap-chain function from DXGIFactory,
+  // we must get DXGI device, adapter, and etc... using querying.
+  IComOwner<IDXGIDevice> dxgiDevice = nullptr;
+  HR(device.QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice));
+
+  IComOwner<IDXGIAdapter> dxgiAdapter = nullptr;
+  HR(dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter));
+
+  IComOwner<IDXGIFactory> dxgiFactory = nullptr;
+  HR(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
+
+  // Create swap chain.
+  HR(dxgiFactory->CreateSwapChain(&device, &descriptor, &ownSwapChainRef));
+  HR(dxgiFactory->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_WINDOW_CHANGES));
+  return S_OK;
+}
+
 std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
   ID3D11Device& device,
   bool isDisjoint)

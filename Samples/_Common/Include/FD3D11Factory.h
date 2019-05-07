@@ -20,6 +20,7 @@
 
 namespace dy
 {
+struct DWindowHandle;
 class APlatformBase;
 } /// ::dy namespace
 
@@ -39,6 +40,20 @@ public:
     LPCSTR szEntryPoint, 
     LPCSTR szShaderModel, 
     ID3DBlob** ppBlobOut);
+
+  /// @brief Get default swap-chain descriptor with pOutputWindowHandle.
+  /// Format will be R8G8B8A8_UNORM.
+  static DXGI_SWAP_CHAIN_DESC GetDefaultSwapChainDesc(
+    unsigned width,
+    unsigned height,
+    HWND pOutputWindowHandle);
+  
+  /// @brief Try create D3D11 default swap-chain.
+  static HRESULT CreateD3D11SwapChain(
+    ID3D11Device& device, 
+    HWND pWindowHandle,
+    DXGI_SWAP_CHAIN_DESC& descriptor,
+    IComOwner<IDXGISwapChain>& ownSwapChainRef);
 
   /// @brief Try to create timestamp query.
   /// If failed, just return nullopt.
