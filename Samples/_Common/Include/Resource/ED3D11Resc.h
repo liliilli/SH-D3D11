@@ -23,4 +23,6 @@ enum class ED3D11Resc
   Texture2D,  // ID3D11Texture2D
   RasterizerState,  // ID3D11RasterizerState 
   DepthStencilState,// ID3D11DepthStencilState
+  BlendState, // ID3D11BlendState
+  Buffer,     // ID3D11Buffer
 };

@@ -210,6 +210,36 @@ public:
   /// @param handle Valid Depth-Stencil State handle.
   /// @return If find, return true. If not find, return false.
   static bool RemoveDepthStencilState(const D11HandleDepthStencilState& handle);
+
+  //!
+  //! Blend State
+  //!
+
+  /// @brief Create Blend State from given valid device and desciptor.
+  /// @param hDevice Valid device handle.
+  /// @param desc Descriptor for Blend state.
+  /// @return If successful, return handle of Blend State resource.
+  [[nodiscard]] static std::optional<D11HandleBlendState>
+  CreateBlendState(const D11HandleDevice& hDevice, const D3D11_BLEND_DESC& desc); 
+
+  /// @brief Check Blend State resource is valid and in container.
+  /// @param handle Valid Blend State handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasBlendState(const D11HandleBlendState& handle) noexcept;
+
+  /// @brief Get borrow type of Blend State resource safely. \n
+  /// This function does not check whether handle is valid 
+  /// or not and Blend State resource is exist or not. \n
+  /// That can be checkable for using D11HandleBlendState::IsValid() 
+  /// and MD3D11Resources::HasBlendState(). 
+  /// @param handle Valid Blend State handle.
+  /// @return Return borrow type of actual D3D11 Blend State resource.
+  static IComBorrow<ID3D11RasterizerState> GetBlendState(const D11HandleBlendState& handle);
+
+  /// @brief Remove Blend State resource with handle.
+  /// @param handle Valid Blend State handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveBlendState(const D11HandleBlendState& handle);
   
   //!
   //! Texture2D
@@ -242,6 +272,37 @@ public:
   /// @return If find, return true. If not find, return false.
   static bool RemoveTexture2D(const D11HandleTexture2D& handle);
 
+  //!
+  //! Buffer
+  //!
+
+  /// @brief Create Buffer of given valid device and optional buffer pointer.
+  /// @param hDevice Valid device handle.
+  /// @param desc Descriptor of D3D11 Buffer.
+  /// @param pInitBuffer Optional initial buffer ptr. This must be valid when Buffer would be IMMUTABLE.
+  /// @return If successful, retrun handle of Buffer resource.
+  [[nodiscard]] static std::optional<D11HandleBuffer>
+  CreateBuffer(
+    const D11HandleDevice& hDevice, const D3D11_BUFFER_DESC& desc, 
+    const void* pInitBuffer = nullptr);
+
+  /// @brief Check Buffer resource is valid and in container.
+  /// @param handle Valid Buffer handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasBuffer(const D11HandleBuffer& handle);
+
+  /// @brief Get borrow type of Buffer resource safely.
+  /// This function does not check whether handle is valid or not and Buffer resource is exist or not.
+  /// That can be checkable for using D11HandleBuffer::IsValid() and MD3D11Resources::HasBuffer().
+  /// @param handle Valid Buffer handle.
+  /// @return Return borrow type of actual D3D11 Buffer resource.
+  static IComBorrow<ID3D11Buffer> GetBuffer(const D11HandleBuffer& handle);
+
+  /// @brief Remove Buffer resource with handle.
+  /// @param handle Valid Buffer handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveBuffer(const D11HandleBuffer& handle);
+
 private:
   template <typename TValue>
   using THashMap = std::unordered_map<::dy::math::DUuid, TValue>;
@@ -256,10 +317,16 @@ private:
   static THashMap<IComOwner<ID3D11RenderTargetView>> mRTVs;
   /// @brief Depth-Stencil-View Resource container.
   static THashMap<IComOwner<ID3D11DepthStencilView>> mDSVs;
-  /// @brief
-  static THashMap<IComOwner<ID3D11Texture2D>> mTexture2Ds;
   /// @brief Rasterizer-State Resource Container.
   static THashMap<IComOwner<ID3D11RasterizerState>> mRasterStates;
   /// @brief Depth-Stencil-State Resource Container.
   static THashMap<IComOwner<ID3D11DepthStencilState>> mDepthStencilStates;
+  /// @brief Blend State Resource Container.
+  static THashMap<IComOwner<ID3D11BlendState>> mBlendStates;
+  /// @brief 2DTextureResource Container.
+  static THashMap<IComOwner<ID3D11Texture2D>> mTexture2Ds;
+  /// @brief Buffer Resource Container.
+  static THashMap<IComOwner<ID3D11Buffer>> mBuffers;
+  /// @brief Vertex-shader Resource Container.
+  //static THashMap<IComOwner<ID3D11VertexShader>> 
 };

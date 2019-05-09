@@ -57,3 +57,7 @@ using D11HandleDSV = DD3D11Handle<ED3D11Resc::DSV>;
 using D11HandleRasterState = DD3D11Handle<ED3D11Resc::RasterizerState>;
 /// @brief Handle type for internal ID3D11DepthStencilState resource.
 using D11HandleDepthStencilState = DD3D11Handle<ED3D11Resc::DepthStencilState>;
+/// @brief Handle type for internal ID3D11BlendState resource.
+using D11HandleBlendState = DD3D11Handle<ED3D11Resc::BlendState>;
+/// @brief Handle type for internal ID3D11Buffer resource.
+using D11HandleBuffer = DD3D11Handle<ED3D11Resc::Buffer>;

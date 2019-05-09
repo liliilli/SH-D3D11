@@ -295,6 +295,34 @@ D3D11_DEPTH_STENCIL_DESC FD3D11Factory::GetDefaultDepthStencilStateDesc()
   return desc;
 }
 
+D3D11_BLEND_DESC FD3D11Factory::GetDefaultBlendStateDesc()
+{
+  static bool isInitialized = false;
+  static D3D11_BLEND_DESC desc = {};
+
+  if (isInitialized == false)
+  {
+    {
+      D3D11_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
+      rtBlendDesc.BlendEnable   = TRUE;
+      rtBlendDesc.BlendOp       = D3D11_BLEND_OP_ADD;
+      rtBlendDesc.BlendOpAlpha  = D3D11_BLEND_OP_ADD;
+      rtBlendDesc.SrcBlend      = D3D11_BLEND_SRC_ALPHA;
+      rtBlendDesc.DestBlend     = D3D11_BLEND_INV_SRC_ALPHA;
+      rtBlendDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
+      rtBlendDesc.DestBlendAlpha= D3D11_BLEND_ZERO;
+      rtBlendDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL; 
+      desc.RenderTarget[0] = rtBlendDesc; 
+    }
+    desc.AlphaToCoverageEnable = false;
+    desc.IndependentBlendEnable = false;
+
+    isInitialized = true;
+  }
+
+  return desc;
+}
+
 std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
   ID3D11Device& device,
   bool isDisjoint)

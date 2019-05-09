@@ -57,6 +57,9 @@ public:
 
   /// @brief Get default depth-stencil state descriptor.
   static D3D11_DEPTH_STENCIL_DESC GetDefaultDepthStencilStateDesc();
+
+  /// @brief Get default blend state descriptor.
+  static D3D11_BLEND_DESC GetDefaultBlendStateDesc();
   
   /// @brief Try create D3D11 default swap-chain.
   static HRESULT CreateD3D11SwapChain(

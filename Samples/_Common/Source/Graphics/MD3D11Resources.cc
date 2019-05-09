@@ -16,11 +16,13 @@
 #include <HelperMacro.h>
 
 MD3D11Resources::THashMap<DD3DResourceDevice>         MD3D11Resources::mDevices; 
+MD3D11Resources::THashMap<IComOwner<ID3D11Buffer>> MD3D11Resources::mBuffers;
 MD3D11Resources::THashMap<IComOwner<IDXGISwapChain>>  MD3D11Resources::mSwapChains;
 MD3D11Resources::THashMap<IComOwner<ID3D11RenderTargetView>> MD3D11Resources::mRTVs;
 MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilView>> MD3D11Resources::mDSVs;
 MD3D11Resources::THashMap<IComOwner<ID3D11RasterizerState>> MD3D11Resources::mRasterStates;
 MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilState>> MD3D11Resources::mDepthStencilStates;
+MD3D11Resources::THashMap<IComOwner<ID3D11BlendState>> MD3D11Resources::mBlendStates;
 MD3D11Resources::THashMap<IComOwner<ID3D11Texture2D>> MD3D11Resources::mTexture2Ds;
 
 //!
@@ -362,6 +364,46 @@ bool MD3D11Resources::RemoveDepthStencilState(const D11HandleDepthStencilState& 
 }
 
 //!
+//! Blend State
+//!
+
+std::optional<D11HandleBlendState> 
+MD3D11Resources::CreateBlendState(const D11HandleDevice& hDevice, const D3D11_BLEND_DESC& desc)
+{
+  // Validation Check
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  auto device = TThis::GetDevice(hDevice);
+
+  // Create DSV resource.
+  ID3D11BlendState* pBlend = nullptr;
+  HR(device->CreateBlendState(&desc, &pBlend));
+
+  // If failed, just return with nullopt.
+  if (pBlend == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mBlendStates.try_emplace(::dy::math::DUuid{true}, pBlend);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid};
+}
+
+bool MD3D11Resources::HasBlendState(const D11HandleBlendState& handle) noexcept
+{
+  return TThis::mBlendStates.find(handle.GetUuid()) != TThis::mBlendStates.end();
+}
+
+bool MD3D11Resources::RemoveBlendState(const D11HandleBlendState& handle)
+{
+  // Validation check.
+  if (TThis::HasBlendState(handle) == false) { return false; }
+
+  TThis::mBlendStates.erase(handle.GetUuid());
+  return true;
+}
+
+//!
 //! Texture2D
 //!
 
@@ -419,5 +461,68 @@ bool MD3D11Resources::RemoveTexture2D(const D11HandleTexture2D& handle)
   if (TThis::HasTexture2D(handle) == false) { return false; }
 
   TThis::mTexture2Ds.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Buffer
+//!
+
+std::optional<D11HandleBuffer>
+MD3D11Resources::CreateBuffer(
+  const D11HandleDevice& hDevice, 
+  const D3D11_BUFFER_DESC& desc, 
+  const void* pInitBuffer)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  assert(desc.Usage == D3D11_USAGE_IMMUTABLE ? pInitBuffer != nullptr : true);
+
+  auto device = TThis::GetDevice(hDevice);
+
+  // Create ID3D11Texture2D Resource.
+  ID3D11Buffer* pBuffer = nullptr;
+  if (pInitBuffer != nullptr)
+  {
+    D3D11_SUBRESOURCE_DATA subresource = {};
+    subresource.pSysMem = pInitBuffer;
+    
+    HR(device->CreateBuffer(&desc, &subresource, &pBuffer));
+  }
+  else
+  {
+    HR(device->CreateBuffer(&desc, nullptr, &pBuffer));
+  }
+
+  // If pTexture2D is null, just return nullopt.
+  if (pBuffer == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mBuffers.try_emplace(::dy::math::DUuid{true}, pBuffer);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid}; 
+}
+
+bool MD3D11Resources::HasBuffer(const D11HandleBuffer& handle)
+{
+  return TThis::mBuffers.find(handle.GetUuid()) != TThis::mBuffers.end();
+}
+
+IComBorrow<ID3D11Buffer> MD3D11Resources::GetBuffer(const D11HandleBuffer& handle)
+{
+  assert(TThis::HasBuffer(handle) == true);
+
+  auto& object = TThis::mBuffers.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
+bool MD3D11Resources::RemoveBuffer(const D11HandleBuffer& handle)
+{
+  // Validation check.
+  if (TThis::HasBuffer(handle) == false) { return false; }
+
+  TThis::mBuffers.erase(handle.GetUuid());
   return true;
 }
