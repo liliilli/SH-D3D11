@@ -33,11 +33,6 @@ public:
   /// @brief Check this instance is valid (owns COM instance)
   [[nodiscard]] bool IsValid() const noexcept;
 
-  TType** operator&()
-  {
-    return &this->mPtrOwner;
-  }
-
   /// @brief Get layered address of COM instance pointer.
   /// This function should be used carefully.
   TType** GetAddressOf() noexcept;

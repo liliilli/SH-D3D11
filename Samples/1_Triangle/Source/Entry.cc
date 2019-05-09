@@ -156,7 +156,7 @@ int WINAPI WinMain(
     HR(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
 
     // Create swap chain.
-    HR(dxgiFactory->CreateSwapChain(&mD3DDevice.Get(), &sd, &mD3DSwapChain));
+    HR(dxgiFactory->CreateSwapChain(&mD3DDevice.Get(), &sd, mD3DSwapChain.GetAddressOf()));
     HR(dxgiFactory->MakeWindowAssociation(
       static_cast<HWND>(platform->_GetHandleOf(*optRes)),
       DXGI_MWA_NO_WINDOW_CHANGES));
@@ -168,7 +168,7 @@ int WINAPI WinMain(
     IComOwner<ID3D11Texture2D> mBackBufferTexture = nullptr; 
     // This function increase internal COM instance reference counting.
     mD3DSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&mBackBufferTexture);
-    mD3DDevice->CreateRenderTargetView(mBackBufferTexture.GetPtr(), nullptr, &mRenderTargetView);
+    mD3DDevice->CreateRenderTargetView(mBackBufferTexture.GetPtr(), nullptr, mRenderTargetView.GetAddressOf());
   }
   
   // Descript Depth/Stencil Buffer and View descriptors.
@@ -197,9 +197,9 @@ int WINAPI WinMain(
 
   // Second parameter of CreateTexture2D is a pointer to initial data to fill the texture with.
   // We do not specify additional DESC to DSV, leave it inherits properties of Depth/Stencil Texture.
-  HR(mD3DDevice->CreateTexture2D(&mDepthStencilDesc, nullptr, &mDepthStencilBuffer));
-  HR(mD3DDevice->CreateDepthStencilView(mDepthStencilBuffer.GetPtr(), nullptr, &mDepthStencilView));
-  mD3DImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView.GetPtr());
+  HR(mD3DDevice->CreateTexture2D(&mDepthStencilDesc, nullptr, mDepthStencilBuffer.GetAddressOf()));
+  HR(mD3DDevice->CreateDepthStencilView(mDepthStencilBuffer.GetPtr(), nullptr, mDepthStencilView.GetAddressOf()));
+  mD3DImmediateContext->OMSetRenderTargets(1, mRenderTargetView.GetAddressOf(), mDepthStencilView.GetPtr());
 
   // Set Viewport
   D3D11_VIEWPORT vp;
@@ -223,7 +223,7 @@ int WINAPI WinMain(
     D3D11_SUBRESOURCE_DATA vbData;
     vbData.pSysMem = vertices.data();
 
-    HR(mD3DDevice->CreateBuffer(&vbDesc, &vbData, &vBuffer));
+    HR(mD3DDevice->CreateBuffer(&vbDesc, &vbData, vBuffer.GetAddressOf()));
   }
 
   IComOwner<ID3D11Buffer> iBuffer = nullptr;
@@ -239,7 +239,7 @@ int WINAPI WinMain(
     D3D11_SUBRESOURCE_DATA ibData;
     ibData.pSysMem = indices.data();
 
-    HR(mD3DDevice->CreateBuffer(&ibDesc, &ibData, &iBuffer));    
+    HR(mD3DDevice->CreateBuffer(&ibDesc, &ibData, iBuffer.GetAddressOf()));    
   }
 
   // Compile Vertex Shader.
@@ -251,12 +251,12 @@ int WINAPI WinMain(
     IComOwner<ID3DBlob> ownVsBlob = nullptr;
     HR(FD3D11Factory::CompileShaderFromFile(
       *platform,
-      "../../Resource/Shader.fx", "VS", "vs_5_0", &ownVsBlob));
+      "../../Resource/Shader.fx", "VS", "vs_5_0", ownVsBlob.GetAddressOf()));
 
     HR(mD3DDevice->CreateVertexShader(
       ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(), 
       nullptr, 
-      &ownVertexShader));
+      ownVertexShader.GetAddressOf()));
    
     // Create Vertex shader input layout.
     // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_input_element_desc
@@ -270,7 +270,7 @@ int WINAPI WinMain(
     HR(mD3DDevice->CreateInputLayout(
       vertexDesc.data(), static_cast<UINT>(vertexDesc.size()), 
       ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(),
-      &ownVsLayout));
+      ownVsLayout.GetAddressOf()));
 
     ownVsBlob.Release();
   }
@@ -285,12 +285,12 @@ int WINAPI WinMain(
     IComOwner<ID3DBlob> ownPsBlob = nullptr;
     HR(FD3D11Factory::CompileShaderFromFile(
       *platform, 
-      "../../Resource/Shader.fx", "PS", "ps_5_0", &ownPsBlob));
+      "../../Resource/Shader.fx", "PS", "ps_5_0", ownPsBlob.GetAddressOf()));
 
     HR(mD3DDevice->CreatePixelShader(
       ownPsBlob->GetBufferPointer(), ownPsBlob->GetBufferSize(), 
       nullptr, 
-      &ownPsShader));
+      ownPsShader.GetAddressOf()));
     ownPsBlob.Release();
   }
  
@@ -298,7 +298,7 @@ int WINAPI WinMain(
   mD3DImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   UINT stride = sizeof(DVertex);
   UINT offset = 0;
-  mD3DImmediateContext->IASetVertexBuffers(0, 1, &vBuffer, &stride, &offset);
+  mD3DImmediateContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &stride, &offset);
   mD3DImmediateContext->IASetIndexBuffer(iBuffer.GetPtr(), DXGI_FORMAT_R32_UINT, 0);
 
   // Set raster state (RS)
@@ -316,7 +316,7 @@ int WINAPI WinMain(
     rasterDesc.MultisampleEnable = false;
     rasterDesc.AntialiasedLineEnable = false;
 
-    HR(mD3DDevice->CreateRasterizerState(&rasterDesc, &ownRasterState));
+    HR(mD3DDevice->CreateRasterizerState(&rasterDesc, ownRasterState.GetAddressOf()));
   }
   mD3DImmediateContext->RSSetState(ownRasterState.GetPtr());
 
@@ -339,7 +339,7 @@ int WINAPI WinMain(
     dssd.StencilReadMask  = 0xff;
     dssd.StencilWriteMask = 0xff;
 
-    HR(mD3DDevice->CreateDepthStencilState(&dssd, &ownDepthStencilState));
+    HR(mD3DDevice->CreateDepthStencilState(&dssd, ownDepthStencilState.GetAddressOf()));
   }
   mD3DImmediateContext->OMSetDepthStencilState(ownDepthStencilState.GetPtr(), 0x00);
 
@@ -362,7 +362,7 @@ int WINAPI WinMain(
     blendDesc.AlphaToCoverageEnable = false;
     blendDesc.IndependentBlendEnable = false;
 
-    HR(mD3DDevice->CreateBlendState(&blendDesc, &ownBlendState));
+    HR(mD3DDevice->CreateBlendState(&blendDesc, ownBlendState.GetAddressOf()));
   }
   const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
   mD3DImmediateContext->OMSetBlendState(ownBlendState.GetPtr(), blendFactor, 0xFFFFFFFF);

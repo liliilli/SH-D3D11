@@ -43,9 +43,9 @@ FD3D11Factory::CreateD3D11Device(dy::APlatformBase& platform)
     nullptr,              // If no flag is exist, just pick up the highest version of SDK.
     0,                    // Above argument brings the array of D3D_FEATURE, so we set it to 0 as nullptr. 
     D3D11_SDK_VERSION,    // Always specify this.
-    &mD3DDevice,          // Output
-    &featureLevel,        // Output
-    &mD3DImmediateContext // Output
+    mD3DDevice.GetAddressOf(),          // Output
+    &featureLevel,                      // Output
+    mD3DImmediateContext.GetAddressOf() // Output
   );
   
   // Error checking.
@@ -207,7 +207,7 @@ HRESULT FD3D11Factory::CreateD3D11SwapChain(
   HR(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
 
   // Create swap chain.
-  HR(dxgiFactory->CreateSwapChain(&device, &descriptor, &ownSwapChainRef));
+  HR(dxgiFactory->CreateSwapChain(&device, &descriptor, ownSwapChainRef.GetAddressOf()));
   HR(dxgiFactory->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_WINDOW_CHANGES));
   return S_OK;
 }
@@ -252,7 +252,7 @@ std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
   queryDesc.Query = isDisjoint == true ? D3D11_QUERY_TIMESTAMP_DISJOINT : D3D11_QUERY_TIMESTAMP;
   queryDesc.MiscFlags = 0;
 
-  if (device.CreateQuery(&queryDesc, &result) != S_OK)
+  if (device.CreateQuery(&queryDesc, result.GetAddressOf()) != S_OK)
   {
     result.Release();
     return std::nullopt;
@@ -271,13 +271,13 @@ FD3D11Factory::CreateTimestampQueryPair(ID3D11Device& device)
   queryDesc.Query = D3D11_QUERY_TIMESTAMP;
   queryDesc.MiscFlags = 0;
 
-  if (device.CreateQuery(&queryDesc, &start) != S_OK)
+  if (device.CreateQuery(&queryDesc, start.GetAddressOf()) != S_OK)
   {
     start.Release();
     return std::nullopt;
   }
 
-  if (device.CreateQuery(&queryDesc, &end) != S_OK)
+  if (device.CreateQuery(&queryDesc, end.GetAddressOf()) != S_OK)
   {
     end.Release();
     return std::nullopt;
