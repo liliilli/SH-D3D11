@@ -11,7 +11,7 @@
 /// SOFTWARE.
 ///
 
-#include <FD3D11TimeFragment.h>
+#include <Profiling/FD3D11TimeFragment.h>
 #include <D3D11.h>
 
 FD3D11TimeFragment::FD3D11TimeFragment(

@@ -15,8 +15,8 @@
 #include <chrono>
 #include <vector>
 
-#include <FD3D11TimeHandle.h>
-#include <FTimeContainer.h>
+#include <Profiling/FD3D11TimeHandle.h>
+#include <Profiling/FTimeContainer.h>
 
 /// @brief Time stamp type.
 using TTimeStamp = std::chrono::duration<double>;

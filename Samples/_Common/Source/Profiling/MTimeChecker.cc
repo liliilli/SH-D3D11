@@ -11,7 +11,7 @@
 /// SOFTWARE.
 ///
 
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 
 MTimeChecker::TCpuContainer   MTimeChecker::mTimerContainer;
 MTimeChecker::TD3D11Container MTimeChecker::mD3D11TimeContainer;

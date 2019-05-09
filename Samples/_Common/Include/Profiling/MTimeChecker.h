@@ -16,10 +16,10 @@
 #include <unordered_map>
 #include <memory>
 
-#include <FCpuTimeHandle.h>
-#include <FD3D11TimeHandle.h>
-#include <FTimeContainer.h>
-#include <FD3D11TimeContainer.h>
+#include <Profiling/FCpuTimeHandle.h>
+#include <Profiling/FD3D11TimeHandle.h>
+#include <Profiling/FTimeContainer.h>
+#include <Profiling/FD3D11TimeContainer.h>
 #include <Math/Common/XGlobalMacroes.h>
 
 struct ID3D11Query;

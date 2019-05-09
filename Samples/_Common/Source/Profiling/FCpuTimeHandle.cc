@@ -11,8 +11,8 @@
 /// SOFTWARE.
 ///
 
-#include <FCpuTimeHandle.h>
-#include <FTimeContainer.h>
+#include <Profiling/FCpuTimeHandle.h>
+#include <Profiling/FTimeContainer.h>
 
 FCpuTimeHandle::FCpuTimeHandle(FTimeContainer& container)
   : mContainer{container},

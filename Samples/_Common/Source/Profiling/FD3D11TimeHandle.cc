@@ -11,11 +11,11 @@
 /// SOFTWARE.
 ///
 
-#include <FD3D11TimeHandle.h>
+#include <Profiling/FD3D11TimeHandle.h>
 
 #include <cassert>
 #include <D3D11.h>
-#include <FD3D11TimeContainer.h>
+#include <Profiling/FD3D11TimeContainer.h>
 
 FD3D11TimeHandle::FD3D11TimeHandle(
   FD3D11TimeContainer& container,
