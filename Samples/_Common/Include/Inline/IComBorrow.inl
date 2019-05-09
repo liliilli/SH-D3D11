@@ -12,8 +12,6 @@
 /// SOFTWARE.
 ///
 
-#include <IComOwner.h>
-
 template <typename TType>
 IComBorrow<TType>::IComBorrow(IComOwner<TType>& comOwner)
   : mPtrCom{&comOwner.Get()}

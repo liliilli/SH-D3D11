@@ -27,8 +27,8 @@
 #include <D3D11.h>
 #include <HelperMacro.h>
 #include <XCommonDebug.h>
-#include <IComOwner.h>
-#include <IComBorrow.h>
+#include <ComWrapper/IComOwner.h>
+#include <ComWrapper/IComBorrow.h>
 #include <FD3D11Factory.h>
 #include <MTimeChecker.h>
 #include <MGuiManager.h>

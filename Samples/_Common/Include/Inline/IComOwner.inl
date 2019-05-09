@@ -12,7 +12,7 @@
 /// SOFTWARE.
 ///
 
-#include <IComBorrow.h>
+#include <ComWrapper/IComBorrow.h>
 
 template <typename TType>
 IComOwner<TType>::IComOwner(TType* pCOMInstance)

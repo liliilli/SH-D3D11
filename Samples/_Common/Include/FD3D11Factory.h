@@ -16,7 +16,7 @@
 #include <string>
 #include <D3D11.h>
 
-#include <IComOwner.h>
+#include <ComWrapper/IComOwner.h>
 
 namespace dy
 {

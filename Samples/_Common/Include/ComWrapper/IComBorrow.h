@@ -39,4 +39,4 @@ public:
 private:
   TType* mPtrCom = nullptr;
 };
-#include <IComBorrow.inl>
+#include <Inline/IComBorrow.inl>

@@ -23,8 +23,8 @@
 #include <D3D11.h>
 #include <HelperMacro.h>
 #include <XCommonDebug.h>
-#include <IComOwner.h>
-#include <IComBorrow.h>
+#include <ComWrapper/IComOwner.h>
+#include <ComWrapper/IComBorrow.h>
 #include <FD3D11Factory.h>
 #include <MTimeChecker.h>
 #include <MGuiManager.h>
@@ -306,8 +306,8 @@ int WINAPI WinMain(
 
   // Setup Dear ImGui context
   SetupGuiSettings(*optRes, (*optDeviceContext).first.Get(), (*optDeviceContext).second.Get());
-  DModelWindow model;
-  MGuiManager::CreateGui<FGuiWindow>("Window", std::ref(model));
+  auto& windowModel = *MGuiManager::CreateSharedModel<DModelWindow>("Window");
+  MGuiManager::CreateGui<FGuiWindow>("Window", std::ref(windowModel));
 
   // Loop
 	while (platform->CanShutdown() == false)
@@ -337,7 +337,7 @@ int WINAPI WinMain(
         TIME_CHECK_FRAGMENT(gpuTime, "CBuffer", ownStartCbUpdate.Get(), ownEndCbUpdate.Get());
 
         DCbScale scale;
-        scale.mScale = model.mScale;
+        scale.mScale = windowModel.mScale;
         mD3DImmediateContext->UpdateSubresource(&cBuffer.Get(), 0, nullptr, &scale, 0, 0);
       }
 
