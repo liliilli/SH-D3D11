@@ -1,0 +1,29 @@
+#pragma once
+///
+/// MIT License
+/// Copyright (c) 2018-2019 Jongmin Yun
+///
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+/// SOFTWARE.
+///
+
+#include <ComWrapper/IComOwner.h>
+#include <D3D11.h>
+
+/// @class DD3DResourceDevice
+/// @brief 
+class DD3DResourceDevice final
+{
+public:
+  DD3DResourceDevice(
+    IComOwner<ID3D11Device>&& device, 
+    IComOwner<ID3D11DeviceContext>&& context);
+
+  IComOwner<ID3D11Device> mOwnDevice = nullptr;
+  IComOwner<ID3D11DeviceContext> mOwnDc = nullptr;
+};

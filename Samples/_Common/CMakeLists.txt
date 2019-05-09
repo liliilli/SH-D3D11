@@ -27,18 +27,6 @@ set(COMMON_INCLUDE "${CMAKE_SOURCE_DIR}\\Samples\\_Common\\Include")
 include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
 include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
 
-set(SOURCE
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FCpuTimeHandle.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11Factory.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeHandle.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeContainer.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FD3D11TimeFragment.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/FTimeContainer.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/IGuiFrame.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/MTimeChecker.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Source/MGuiManager.cc"
-)
-
 set(IMGUI_SOURCE
 	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui.cpp"
 	"${CMAKE_SOURCE_DIR}/Library/imgui/imgui_draw.cpp"
@@ -54,6 +42,7 @@ add_library(Common STATIC
 	${SOURCE}
 	${IMGUI_SOURCE}
 )
+add_subdirectory(Source)
 target_include_directories(Common
 PUBLIC
 	${COMMON_INCLUDE}
