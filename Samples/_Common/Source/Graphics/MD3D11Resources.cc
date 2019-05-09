@@ -17,6 +17,8 @@
 
 MD3D11Resources::THashMap<DD3DResourceDevice>         MD3D11Resources::mDevices; 
 MD3D11Resources::THashMap<IComOwner<IDXGISwapChain>>  MD3D11Resources::mSwapChains;
+MD3D11Resources::THashMap<IComOwner<ID3D11RenderTargetView>> MD3D11Resources::mRTVs;
+MD3D11Resources::THashMap<IComOwner<ID3D11Texture2D>> MD3D11Resources::mTexture2Ds;
 
 //!
 //! Device
@@ -160,11 +162,125 @@ bool MD3D11Resources::HasSwapChain(const D11SwapChainHandle& handle) noexcept
   return TThis::mSwapChains.find(handle.GetUuid()) != TThis::mSwapChains.end();
 }
 
+IComBorrow<IDXGISwapChain> 
+MD3D11Resources::GetSwapChain(const D11SwapChainHandle& handle)
+{
+  assert(TThis::HasSwapChain(handle) == true);
+
+  auto& object = TThis::mSwapChains.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
 bool MD3D11Resources::RemoveSwapChain(const D11SwapChainHandle& handle)
 {
   // Validation check.
   if (TThis::HasSwapChain(handle) == false) { return false; }
 
   TThis::mSwapChains.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Rendering-Target View
+//!
+
+std::optional<D11HandleRTV>
+MD3D11Resources::CreateRTVFromSwapChain(
+  const D11HandleDevice& hDevice, const D11SwapChainHandle& hSwapChain, 
+  D3D11_RENDER_TARGET_VIEW_DESC* pDesc)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  if (TThis::HasSwapChain(hSwapChain) == false) { return std::nullopt; }
+
+  auto swapChain  = TThis::GetSwapChain(hSwapChain);
+  auto device     = TThis::GetDevice(hDevice);
+
+  // Create RTV resource.
+  ID3D11RenderTargetView* pRtv = nullptr;
+  {
+    ID3D11Texture2D* mBackBufferTexture = nullptr; 
+
+    // This function increase internal COM instance reference counting.
+    swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&mBackBufferTexture);
+    HR(device->CreateRenderTargetView(mBackBufferTexture, pDesc, &pRtv));
+    ReleaseCOM(mBackBufferTexture);
+  }
+
+  // If failed, just return with nullopt.
+  if (pRtv == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mRTVs.try_emplace(::dy::math::DUuid{true}, pRtv);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid};
+}
+
+bool MD3D11Resources::HasRTV(const D11HandleRTV& handle) noexcept
+{
+  return TThis::mRTVs.find(handle.GetUuid()) != TThis::mRTVs.end();
+}
+
+bool MD3D11Resources::RemoveRTV(const D11HandleRTV& handle)
+{
+  // Validation check.
+  if (TThis::HasRTV(handle) == false) { return false; }
+
+  TThis::mRTVs.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Texture2D
+//!
+
+std::optional<D11HandleTexture2D>
+MD3D11Resources::CreateTexture2D(
+  const D11HandleDevice& hDevice, 
+  const D3D11_TEXTURE2D_DESC& desc, 
+  const void* pInitBuffer)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  auto device = TThis::GetDevice(hDevice);
+
+  // Create ID3D11Texture2D Resource.
+  ID3D11Texture2D* pTexture2d = nullptr;
+  if (pInitBuffer != nullptr)
+  {
+    D3D11_SUBRESOURCE_DATA subresource = {};
+    subresource.pSysMem = pInitBuffer;
+    
+    HR(device->CreateTexture2D(&desc, &subresource, &pTexture2d));
+  }
+  else
+  {
+    HR(device->CreateTexture2D(&desc, nullptr, &pTexture2d));
+  }
+
+  // If pTexture2D is null, just return nullopt.
+  if (pTexture2d == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mTexture2Ds.try_emplace(::dy::math::DUuid{true}, pTexture2d);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid};
+}
+
+bool MD3D11Resources::HasTexture2D(const D11HandleTexture2D& handle)
+{
+  return TThis::mTexture2Ds.find(handle.GetUuid()) != TThis::mTexture2Ds.end();
+}
+
+bool MD3D11Resources::RemoveTexture2D(const D11HandleTexture2D& handle)
+{
+  // Validation check.
+  if (TThis::HasTexture2D(handle) == false) { return false; }
+
+  TThis::mTexture2Ds.erase(handle.GetUuid());
   return true;
 }

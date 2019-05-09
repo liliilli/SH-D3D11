@@ -16,5 +16,9 @@
 /// @brief
 enum class ED3D11Resc 
 {
-  Device, // ID3D11Device & ID3D11DeviceContext.
+  Device,     // ID3D11Device & ID3D11DeviceContext.
+  SwapChain,  // ID3D11SwapChain
+  RTV,        // ID3D11RenderTargetView
+  DSV,        // ID3D11DepthStencilView
+  Texture2D,  // ID3D11Texture2D
 };

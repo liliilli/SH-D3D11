@@ -22,9 +22,16 @@ template <ED3D11Resc EValue>
 class DD3D11Handle final
 {
 public:
+  DD3D11Handle(std::nullptr_t) {};
   DD3D11Handle(const ::dy::math::DUuid& validUuid)
     : mUuid{validUuid}
   { } 
+
+  [[nodiscard]] bool IsValid() const noexcept
+  {
+    static const decltype(mUuid) noneUuid = {false};
+    return this->mUuid != noneUuid;
+  }
 
   const auto& GetUuid() const noexcept
   {
@@ -33,8 +40,16 @@ public:
 
 private:
   ED3D11Resc mValue = EValue;
-  ::dy::math::DUuid mUuid;
+  ::dy::math::DUuid mUuid = ::dy::math::DUuid{false};
 };
 
 /// @brief 
 using D11HandleDevice = DD3D11Handle<ED3D11Resc::Device>;
+/// @brief
+using D11SwapChainHandle = DD3D11Handle<ED3D11Resc::SwapChain>;
+/// @brief
+using D11HandleRTV = DD3D11Handle<ED3D11Resc::RTV>;
+/// @brief Handle type for internal ID3D11Texture2D resource.
+using D11HandleTexture2D = DD3D11Handle<ED3D11Resc::Texture2D>;
+/// @brief Handle type for internal ID3D11DepthStencilView resource.
+using D11HandleDSV = DD3D11Handle<ED3D11Resc::DSV>;
