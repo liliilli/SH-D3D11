@@ -12,10 +12,12 @@
 /// SOFTWARE.
 ///
 
+#include <cstdint>
+#include <cassert>
+
 #include <atomic>
 #include <algorithm>
 #include <mutex>
-#include <cstdint>
 #include <vector>
 
 template <typename TType>
@@ -25,6 +27,9 @@ template <typename TType>
 class XComCounter final
 {
 public:
+  XComCounter() = default;
+  ~XComCounter();
+
   /// @brief
   void syncPush(IComBorrow<TType>& borrow)
   {

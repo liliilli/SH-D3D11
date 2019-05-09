@@ -12,3 +12,13 @@
 /// SOFTWARE.
 ///
 
+#include <ComWrapper/IComBorrow.h>
+
+template <typename TType>
+XComCounter<TType>::~XComCounter()
+{
+  for (auto& borrow : this->mBorrows)
+  {
+    borrow->mPtrCom = nullptr;
+  }
+}

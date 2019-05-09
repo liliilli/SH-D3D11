@@ -16,86 +16,87 @@
 #include <ComWrapper/IComBorrow.h>
 
 template <typename TType>
+IComOwner<TType>::IComOwner(std::nullptr_t) { }
+
+template <typename TType>
 IComOwner<TType>::IComOwner(TType* pCOMInstance)
-  : mPtrOwner{pCOMInstance},
-    mCounter{std::make_unique<XComCounter<TType>>()}
+  : mObj{new __IComOwner<TType>(pCOMInstance)}
 { };
 
 template <typename TType>
-IComOwner<TType>::IComOwner(std::nullptr_t)
-  : mPtrOwner{nullptr},
-    mCounter{std::make_unique<XComCounter<TType>>()}
-{ }
-
-template <typename TType>
-IComOwner<TType>::~IComOwner()
-{
-  assert(this->mCounter == nullptr || this->mCounter->syncGetCounter() == 0);
-  TryReleaseSelf();
-}
-
-template <typename TType>
 IComOwner<TType>::IComOwner(IComOwner&& movedOwner) noexcept
-  : mPtrOwner{movedOwner.mPtrOwner},
-    mCounter{std::move(movedOwner.mCounter)}
+  : mObj{movedOwner.mObj}
 {
-  movedOwner.mPtrOwner  = nullptr;
-  movedOwner.mCounter   = nullptr;
+  movedOwner.mObj = nullptr;
 }
 
 template <typename TType>
 IComOwner<TType>& IComOwner<TType>::operator=(IComOwner&& movedOwner) noexcept
 {
   if (this == &movedOwner) { return *this; }
-
-  if (this->mCounter != nullptr && this->mCounter->syncGetCounter() != 0)
+  
+  // Release old one.
+  if (this->mObj != nullptr)
   {
-    // DO SOMETHING   
+    TryReleaseSelf();
+    delete this->mObj;
+    this->mObj = nullptr;
   }
-  TryReleaseSelf();
 
-  this->mPtrOwner = movedOwner.mPtrOwner;
-  this->mCounter = std::move(movedOwner.mCounter);
-  movedOwner.mPtrOwner  = nullptr;
-  movedOwner.mCounter   = nullptr;
-
+  this->mObj = movedOwner.mObj;
+  movedOwner.mObj = nullptr;
   return *this;
+}
+
+template <typename TType>
+IComOwner<TType>::~IComOwner()
+{
+  assert(this->mObj == nullptr 
+      || this->mObj->mCounter.syncGetCounter() == 0);
+  TryReleaseSelf();
 }
 
 template <typename TType>
 bool IComOwner<TType>::IsValid() const noexcept
 {
-  return this->mPtrOwner != nullptr;
+  return this->mObj != nullptr;
 }
 
 template <typename TType>
 IComBorrow<TType> IComOwner<TType>::GetBorrow() noexcept
 {
-  return IComBorrow<TType>(*this);
+  assert(this->mObj != nullptr);
+  return IComBorrow<TType>(*this->mObj);
 }
 
 template <typename TType>
 TType* IComOwner<TType>::GetPtr() noexcept
 {
-  return this->mPtrOwner;
+  assert(this->mObj != nullptr);
+  return this->mObj->mPtrOwner;
 }
 
+#if 0
 template <typename TType>
 TType** IComOwner<TType>::GetAddressOf() noexcept
 {
+  assert(this->mObj != nullptr);
   return &this->mPtrOwner;
 }
+#endif
 
 template <typename TType>
 TType& IComOwner<TType>::operator*()
 {
-  return *this->mPtrOwner;
+  assert(this->mObj != nullptr);
+  return *this->mObj->mPtrOwner;
 }
 
 template <typename TType>
 TType* IComOwner<TType>::operator->()
 {
-  return this->mPtrOwner;
+  assert(this->mObj != nullptr);
+  return this->mObj->mPtrOwner;
 }
 
 template <typename TType>
@@ -107,9 +108,12 @@ void IComOwner<TType>::Release()
 template <typename TType>
 void IComOwner<TType>::TryReleaseSelf()
 {
-  if (this->mPtrOwner != nullptr)
+  if (this->mObj == nullptr) { return; }
+
+  if (this->mObj != nullptr)
   {
-    this->mPtrOwner->Release();
-    this->mPtrOwner = nullptr;
+    this->mObj->mPtrOwner->Release();
+    delete this->mObj;
+    this->mObj = nullptr;
   }
 }

@@ -13,30 +13,62 @@
 ///
 
 template <typename TType>
-class IComOwner;
+class __IComOwner;
 
+template <typename TType>
+class XComCounter;
+
+/// @class IComBorrow
+/// @brief 
 template <typename TType>
 class IComBorrow final
 {
 public:
-  explicit IComBorrow(IComOwner<TType>& comOwner);
+  explicit IComBorrow(__IComOwner<TType>& comOwner);
 
-  TType& Get() 
+  IComBorrow(const IComBorrow& borrow)
+    : mPtrCom{borrow.mPtrCom}
   {
-    return *this->mPtrCom;
+    this->mPtrCom->mCounter.syncPush(*this);
   }
 
-  operator TType*()
+  IComBorrow& operator=(const IComBorrow& borrow)
   {
-    return this->mPtrCom;
+    if (this == &borrow) { return *this; }
+    if (this->mPtrCom == borrow.mPtrCom) { return *this; }
+
+    this->mPtrCom->mCounter.syncPop(*this);
+    this->mPtrCom = borrow.mPtrCom;
+    this->mPtrCom->mCounter.syncPush(*this);
+    return *this;
+  }
+
+  IComBorrow(IComBorrow&& borrow) noexcept = delete;
+  IComBorrow& operator=(IComBorrow&& borrow) noexcept = delete;
+
+  ~IComBorrow();
+
+  /// @brief Check this instance is valid (owns COM instance)
+  [[nodiscard]] bool IsValid() const noexcept;
+
+  TType& GetRef() 
+  {
+    return *this->mPtrCom->mPtrOwner;
+  }
+  
+  TType* GetPtr()
+  {
+    return this->mPtrCom->mPtrOwner;
   }
 
   TType* operator->()
   {
-    return this->mPtrCom;
+    return this->mPtrCom->mPtrOwner;
   }
 
 private:
-  TType* mPtrCom = nullptr;
+  __IComOwner<TType>* mPtrCom = nullptr;
+
+  friend class XComCounter<TType>;
 };
 #include <Inline/IComBorrow.inl>

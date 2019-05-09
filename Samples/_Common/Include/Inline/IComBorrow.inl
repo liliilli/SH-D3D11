@@ -13,6 +13,20 @@
 ///
 
 template <typename TType>
-IComBorrow<TType>::IComBorrow(IComOwner<TType>& comOwner)
-  : mPtrCom{comOwner.GetPtr()}
-{};
+IComBorrow<TType>::IComBorrow(__IComOwner<TType>& comOwner)
+  : mPtrCom{&comOwner}
+{
+  this->mPtrCom->mCounter.syncPush(*this);
+};
+
+template <typename TType>
+IComBorrow<TType>::~IComBorrow()
+{
+  this->mPtrCom->mCounter.syncPop(*this);
+}
+
+template <typename TType>
+bool IComBorrow<TType>::IsValid() const noexcept
+{
+  return this->mPtrCom != nullptr;
+}
