@@ -17,7 +17,16 @@
 template <typename TType>
 IComOwner<TType>::IComOwner(TType* pCOMInstance)
   : mPtrOwner{pCOMInstance} 
-{ };
+{ 
+  static_assert(std::is_base_of_v<IUnknown, TType>);
+};
+
+template <typename TType>
+IComOwner<TType>::IComOwner(std::nullptr_t)
+  : mPtrOwner{nullptr}
+{
+  static_assert(std::is_base_of_v<IUnknown, TType>);
+}
 
 template <typename TType>
 IComOwner<TType>::~IComOwner()

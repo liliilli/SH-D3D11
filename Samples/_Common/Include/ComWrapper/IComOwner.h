@@ -12,6 +12,8 @@
 /// SOFTWARE.
 ///
 
+#include <type_traits>
+
 template <typename TType>
 class IComBorrow;
 
@@ -19,7 +21,7 @@ template <typename TType>
 class IComOwner final
 {
 public:
-  IComOwner(std::nullptr_t) {};
+  IComOwner(std::nullptr_t);
   explicit IComOwner(TType* pCOMInstance); 
   ~IComOwner();
 
@@ -38,7 +40,7 @@ public:
   
   /// @brief Get reference of COM instance ptr.
   /// This does not check validity.
-  TType& Get() noexcept { return *this->mPtrOwner; }
+  TType& GetRef() noexcept { return *this->mPtrOwner; }
 
   /// @brief Get Borrow type of COM Owner.
   IComBorrow<TType> GetBorrow() noexcept;

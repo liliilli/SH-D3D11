@@ -168,7 +168,7 @@ int WINAPI WinMain(
     IComOwner<ID3D11Texture2D> mBackBufferTexture = nullptr; 
     // This function increase internal COM instance reference counting.
     mD3DSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&mBackBufferTexture);
-    mD3DDevice->CreateRenderTargetView(&mBackBufferTexture.Get(), nullptr, &mRenderTargetView);
+    mD3DDevice->CreateRenderTargetView(&mBackBufferTexture.GetRef(), nullptr, &mRenderTargetView);
   }
   
   // Descript Depth/Stencil Buffer and View descriptors.
@@ -198,8 +198,8 @@ int WINAPI WinMain(
   // Second parameter of CreateTexture2D is a pointer to initial data to fill the texture with.
   // We do not specify additional DESC to DSV, leave it inherits properties of Depth/Stencil Texture.
   HR(mD3DDevice->CreateTexture2D(&mDepthStencilDesc, nullptr, &mDepthStencilBuffer));
-  HR(mD3DDevice->CreateDepthStencilView(&mDepthStencilBuffer.Get(), nullptr, &mDepthStencilView));
-  mD3DImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, &mDepthStencilView.Get());
+  HR(mD3DDevice->CreateDepthStencilView(&mDepthStencilBuffer.GetRef(), nullptr, &mDepthStencilView));
+  mD3DImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, &mDepthStencilView.GetRef());
 
   // Set Viewport
   D3D11_VIEWPORT vp;
@@ -276,7 +276,7 @@ int WINAPI WinMain(
   }
 
   // Set layout into logical device context.
-  mD3DImmediateContext->IASetInputLayout(&ownVsLayout.Get());
+  mD3DImmediateContext->IASetInputLayout(&ownVsLayout.GetRef());
 
   // Compile Pixel Shader 
   // "PS" is entry point.
@@ -299,7 +299,7 @@ int WINAPI WinMain(
   UINT stride = sizeof(DVertex);
   UINT offset = 0;
   mD3DImmediateContext->IASetVertexBuffers(0, 1, &vBuffer, &stride, &offset);
-  mD3DImmediateContext->IASetIndexBuffer(&iBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+  mD3DImmediateContext->IASetIndexBuffer(&iBuffer.GetRef(), DXGI_FORMAT_R32_UINT, 0);
 
   // Set raster state (RS)
   IComOwner<ID3D11RasterizerState> ownRasterState = nullptr;
@@ -318,7 +318,7 @@ int WINAPI WinMain(
 
     HR(mD3DDevice->CreateRasterizerState(&rasterDesc, &ownRasterState));
   }
-  mD3DImmediateContext->RSSetState(&ownRasterState.Get());
+  mD3DImmediateContext->RSSetState(&ownRasterState.GetRef());
 
   // Set rect state.
   std::array<D3D11_RECT, 1> ownRectState =
@@ -341,7 +341,7 @@ int WINAPI WinMain(
 
     HR(mD3DDevice->CreateDepthStencilState(&dssd, &ownDepthStencilState));
   }
-  mD3DImmediateContext->OMSetDepthStencilState(&ownDepthStencilState.Get(), 0x00);
+  mD3DImmediateContext->OMSetDepthStencilState(&ownDepthStencilState.GetRef(), 0x00);
 
   // Set blend state
   IComOwner<ID3D11BlendState> ownBlendState = nullptr;
@@ -365,7 +365,7 @@ int WINAPI WinMain(
     HR(mD3DDevice->CreateBlendState(&blendDesc, &ownBlendState));
   }
   const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
-  mD3DImmediateContext->OMSetBlendState(&ownBlendState.Get(), blendFactor, 0xFFFFFFFF);
+  mD3DImmediateContext->OMSetBlendState(&ownBlendState.GetRef(), blendFactor, 0xFFFFFFFF);
 
   // Make timestamp queries (disjoint and start-end queries)
   // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3d11/nf-d3d11-id3d11device-createquery
@@ -409,23 +409,23 @@ int WINAPI WinMain(
     auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
     auto gpuTime = MTimeChecker::CheckGpuD3D11Time(
       "GpuFrame", 
-      ownDisjointQuery.Get(), mD3DImmediateContext.Get(), 
+      ownDisjointQuery.GetRef(), mD3DImmediateContext.Get(), 
       false);
 
     {
       auto fragment = 
-        gpuTime.CheckFragment("Overall", ownGpuStartFrameQuery.Get(), ownGpuEndFrameQuery.Get());
+        gpuTime.CheckFragment("Overall", ownGpuStartFrameQuery.GetRef(), ownGpuEndFrameQuery.GetRef());
 
       // D3D Routine
-      mD3DImmediateContext->ClearRenderTargetView(&mRenderTargetView.Get(), colors[0].data());
-      mD3DImmediateContext->ClearDepthStencilView(&mDepthStencilView.Get(), 
+      mD3DImmediateContext->ClearRenderTargetView(&mRenderTargetView.GetRef(), colors[0].data());
+      mD3DImmediateContext->ClearDepthStencilView(&mDepthStencilView.GetRef(), 
         D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
         1.0f,
         0);
 
       //mD3DImmediateContext->RSSetState(&ownRasterState.Get());
-      mD3DImmediateContext->VSSetShader(&ownVertexShader.Get(), nullptr, 0);
-      mD3DImmediateContext->PSSetShader(&ownPsShader.Get(), nullptr, 0);
+      mD3DImmediateContext->VSSetShader(&ownVertexShader.GetRef(), nullptr, 0);
+      mD3DImmediateContext->PSSetShader(&ownPsShader.GetRef(), nullptr, 0);
       mD3DImmediateContext->DrawIndexed(3, 0, 0);
 
       MGuiManager::Render();
