@@ -14,5 +14,5 @@
 
 template <typename TType>
 IComBorrow<TType>::IComBorrow(IComOwner<TType>& comOwner)
-  : mPtrCom{&comOwner.GetRef()}
+  : mPtrCom{comOwner.GetPtr()}
 {};

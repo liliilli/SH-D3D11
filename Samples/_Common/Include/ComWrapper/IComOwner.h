@@ -37,16 +37,25 @@ public:
   {
     return &this->mPtrOwner;
   }
-  
-  /// @brief Get reference of COM instance ptr.
-  /// This does not check validity.
-  TType& GetRef() noexcept { return *this->mPtrOwner; }
+
+  /// @brief Get layered address of COM instance pointer.
+  /// This function should be used carefully.
+  TType** GetAddressOf() noexcept;
 
   /// @brief Get Borrow type of COM Owner.
   IComBorrow<TType> GetBorrow() noexcept;
 
-  /// @brief Create temporary borrow type and do operator->() of borrow type recursively.
-  IComBorrow<TType> operator->();
+  /// @brief Get pointer of COM instance pointer.
+  /// This function should be used carefully.
+  TType* GetPtr() noexcept;
+
+  /// @brief Get reference of COM instance ptr.
+  /// This does not check validity.
+  TType& operator*();
+
+  /// @brief Get pointer of COM instance.
+  /// This does not check validity.
+  TType* operator->();
 
   /// @brief Try release COM instance if COM is bound to wrapping type.
   void Release();

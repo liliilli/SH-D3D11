@@ -66,9 +66,27 @@ IComBorrow<TType> IComOwner<TType>::GetBorrow() noexcept
 }
 
 template <typename TType>
-IComBorrow<TType> IComOwner<TType>::operator->()
+TType* IComOwner<TType>::GetPtr() noexcept
 {
-  return IComBorrow<TType>(*this);
+  return this->mPtrOwner;
+}
+
+template <typename TType>
+TType** IComOwner<TType>::GetAddressOf() noexcept
+{
+  return &this->mPtrOwner;
+}
+
+template <typename TType>
+TType& IComOwner<TType>::operator*()
+{
+  return *this->mPtrOwner;
+}
+
+template <typename TType>
+TType* IComOwner<TType>::operator->()
+{
+  return this->mPtrOwner;
 }
 
 template <typename TType>
