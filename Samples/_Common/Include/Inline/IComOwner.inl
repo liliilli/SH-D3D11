@@ -12,33 +12,35 @@
 /// SOFTWARE.
 ///
 
+#include <cassert>
 #include <ComWrapper/IComBorrow.h>
 
 template <typename TType>
 IComOwner<TType>::IComOwner(TType* pCOMInstance)
-  : mPtrOwner{pCOMInstance} 
-{ 
-  static_assert(std::is_base_of_v<IUnknown, TType>);
-};
+  : mPtrOwner{pCOMInstance},
+    mCounter{std::make_unique<XComCounter<TType>>()}
+{ };
 
 template <typename TType>
 IComOwner<TType>::IComOwner(std::nullptr_t)
-  : mPtrOwner{nullptr}
-{
-  static_assert(std::is_base_of_v<IUnknown, TType>);
-}
+  : mPtrOwner{nullptr},
+    mCounter{std::make_unique<XComCounter<TType>>()}
+{ }
 
 template <typename TType>
 IComOwner<TType>::~IComOwner()
 {
+  assert(this->mCounter == nullptr || this->mCounter->syncGetCounter() == 0);
   TryReleaseSelf();
 }
 
 template <typename TType>
 IComOwner<TType>::IComOwner(IComOwner&& movedOwner) noexcept
-  : mPtrOwner{movedOwner.mPtrOwner}
+  : mPtrOwner{movedOwner.mPtrOwner},
+    mCounter{std::move(movedOwner.mCounter)}
 {
-  movedOwner.mPtrOwner = nullptr;
+  movedOwner.mPtrOwner  = nullptr;
+  movedOwner.mCounter   = nullptr;
 }
 
 template <typename TType>
@@ -46,9 +48,16 @@ IComOwner<TType>& IComOwner<TType>::operator=(IComOwner&& movedOwner) noexcept
 {
   if (this == &movedOwner) { return *this; }
 
+  if (this->mCounter != nullptr && this->mCounter->syncGetCounter() != 0)
+  {
+    // DO SOMETHING   
+  }
   TryReleaseSelf();
+
   this->mPtrOwner = movedOwner.mPtrOwner;
-  movedOwner.mPtrOwner = nullptr;
+  this->mCounter = std::move(movedOwner.mCounter);
+  movedOwner.mPtrOwner  = nullptr;
+  movedOwner.mCounter   = nullptr;
 
   return *this;
 }

@@ -12,13 +12,17 @@
 /// SOFTWARE.
 ///
 
+#include <memory>
 #include <type_traits>
+#include <ComWrapper/XComCounter.h>
 
 template <typename TType>
 class IComBorrow;
 
+/// @class IComOwner
+/// @brief
 template <typename TType>
-class IComOwner final
+class [[nodiscard]] IComOwner final
 {
 public:
   IComOwner(std::nullptr_t);
@@ -44,6 +48,9 @@ public:
   /// This function should be used carefully.
   TType* GetPtr() noexcept;
 
+  /// @brief Try release COM instance if COM is bound to wrapping type.
+  void Release();
+
   /// @brief Get reference of COM instance ptr.
   /// This does not check validity.
   TType& operator*();
@@ -52,9 +59,6 @@ public:
   /// This does not check validity.
   TType* operator->();
 
-  /// @brief Try release COM instance if COM is bound to wrapping type.
-  void Release();
-
 private:
   /// @brief Release (Decrease reference count of COM instance) 
   /// when COM instance is exist.
@@ -62,6 +66,9 @@ private:
 
   /// @brief Actual COM instance pointer.
   TType* mPtrOwner = nullptr;
+  std::unique_ptr<XComCounter<TType>> mCounter = nullptr;
+
+  static_assert(std::is_base_of_v<IUnknown, TType>);
 };
 
 #include <Inline/IComOwner.inl>
