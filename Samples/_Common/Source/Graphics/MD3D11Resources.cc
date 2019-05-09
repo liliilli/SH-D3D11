@@ -18,6 +18,9 @@
 MD3D11Resources::THashMap<DD3DResourceDevice>         MD3D11Resources::mDevices; 
 MD3D11Resources::THashMap<IComOwner<IDXGISwapChain>>  MD3D11Resources::mSwapChains;
 MD3D11Resources::THashMap<IComOwner<ID3D11RenderTargetView>> MD3D11Resources::mRTVs;
+MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilView>> MD3D11Resources::mDSVs;
+MD3D11Resources::THashMap<IComOwner<ID3D11RasterizerState>> MD3D11Resources::mRasterStates;
+MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilState>> MD3D11Resources::mDepthStencilStates;
 MD3D11Resources::THashMap<IComOwner<ID3D11Texture2D>> MD3D11Resources::mTexture2Ds;
 
 //!
@@ -233,6 +236,132 @@ bool MD3D11Resources::RemoveRTV(const D11HandleRTV& handle)
 }
 
 //!
+//! Depth-Stencil View
+//!
+
+std::optional<D11HandleDSV>
+MD3D11Resources::CreateDSV(
+  const D11HandleDevice& hDevice, const D11HandleTexture2D& hTexture2D,
+  D3D11_DEPTH_STENCIL_VIEW_DESC* pDesc)
+{
+  // Validation Check
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  if (TThis::HasTexture2D(hTexture2D) == false) { return std::nullopt; }
+
+  auto texture2D  = TThis::GetTexture2D(hTexture2D);
+  auto device     = TThis::GetDevice(hDevice);
+
+  // Create DSV resource.
+  ID3D11DepthStencilView* pDsv = nullptr;
+  HR(device->CreateDepthStencilView(texture2D.GetPtr(), pDesc, &pDsv));
+
+  // If failed, just return with nullopt.
+  if (pDsv == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mDSVs.try_emplace(::dy::math::DUuid{true}, pDsv);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid};
+}
+
+bool MD3D11Resources::HasDSV(const D11HandleDSV& handle) noexcept
+{
+  return TThis::mDSVs.find(handle.GetUuid()) != TThis::mDSVs.end();
+}
+
+bool MD3D11Resources::RemoveDSV(const D11HandleDSV& handle)
+{
+  // Validation check.
+  if (TThis::HasDSV(handle) == false) { return false; }
+
+  TThis::mDSVs.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Rasterizer-State
+//!
+
+std::optional<D11HandleRasterState>
+MD3D11Resources::CreateRasterState(const D11HandleDevice& hDevice, const D3D11_RASTERIZER_DESC& desc)
+{
+  // Validation Check
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  auto device = TThis::GetDevice(hDevice);
+
+  // Create DSV resource.
+  ID3D11RasterizerState* pRasterState = nullptr;
+  HR(device->CreateRasterizerState(&desc, &pRasterState));
+
+  // If failed, just return with nullopt.
+  if (pRasterState == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mRasterStates.try_emplace(::dy::math::DUuid{true}, pRasterState);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid};
+}
+
+bool MD3D11Resources::HasRasterState(const D11HandleRasterState& handle) noexcept
+{
+  return TThis::mRasterStates.find(handle.GetUuid()) != TThis::mRasterStates.end();
+}
+
+bool MD3D11Resources::RemoveRasterState(const D11HandleRasterState& handle)
+{
+  // Validation check.
+  if (TThis::HasRasterState(handle) == false) { return false; }
+
+  TThis::mRasterStates.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Depth-Stencil State
+//!
+
+std::optional<D11HandleDepthStencilState>
+MD3D11Resources::CreateDepthStencilState(
+  const D11HandleDevice& hDevice, const D3D11_DEPTH_STENCIL_DESC& desc)
+{
+  // Validation Check
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  auto device = TThis::GetDevice(hDevice);
+
+  // Create DSV resource.
+  ID3D11DepthStencilState* pDss = nullptr;
+  HR(device->CreateDepthStencilState(&desc, &pDss));
+
+  // If failed, just return with nullopt.
+  if (pDss == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mDepthStencilStates.try_emplace(::dy::math::DUuid{true}, pDss);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid};
+}
+
+bool MD3D11Resources::HasDepthStencilState(const D11HandleDepthStencilState& handle) noexcept
+{
+  return TThis::mDepthStencilStates.find(handle.GetUuid()) != TThis::mDepthStencilStates.end();
+}
+
+bool MD3D11Resources::RemoveDepthStencilState(const D11HandleDepthStencilState& handle)
+{
+  // Validation check.
+  if (TThis::HasDepthStencilState(handle) == false) { return false; }
+
+  TThis::mDepthStencilStates.erase(handle.GetUuid());
+  return true;
+}
+
+//!
 //! Texture2D
 //!
 
@@ -274,6 +403,14 @@ MD3D11Resources::CreateTexture2D(
 bool MD3D11Resources::HasTexture2D(const D11HandleTexture2D& handle)
 {
   return TThis::mTexture2Ds.find(handle.GetUuid()) != TThis::mTexture2Ds.end();
+}
+
+IComBorrow<ID3D11Texture2D> MD3D11Resources::GetTexture2D(const D11HandleTexture2D& handle)
+{
+  assert(TThis::HasTexture2D(handle) == true);
+
+  auto& object = TThis::mTexture2Ds.at(handle.GetUuid());
+  return object.GetBorrow();  
 }
 
 bool MD3D11Resources::RemoveTexture2D(const D11HandleTexture2D& handle)

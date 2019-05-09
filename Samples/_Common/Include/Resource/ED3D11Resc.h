@@ -21,4 +21,6 @@ enum class ED3D11Resc
   RTV,        // ID3D11RenderTargetView
   DSV,        // ID3D11DepthStencilView
   Texture2D,  // ID3D11Texture2D
+  RasterizerState,  // ID3D11RasterizerState 
+  DepthStencilState,// ID3D11DepthStencilState
 };

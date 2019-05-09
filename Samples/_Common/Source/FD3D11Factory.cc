@@ -35,6 +35,8 @@ FD3D11Factory::CreateD3D11Device(dy::APlatformBase& platform)
 #endif
 
   // Make device. (physical? logical?)
+  decltype(mD3DDevice)::TPtrType pDevice = nullptr;
+  decltype(mD3DImmediateContext)::TPtrType pDc = nullptr;
   HRESULT hr = D3D11CreateDevice(
     nullptr,              // Default Adapter (Primary)
     D3D_DRIVER_TYPE_HARDWARE, // Use hardware driver (Most optimal) 
@@ -43,10 +45,12 @@ FD3D11Factory::CreateD3D11Device(dy::APlatformBase& platform)
     nullptr,              // If no flag is exist, just pick up the highest version of SDK.
     0,                    // Above argument brings the array of D3D_FEATURE, so we set it to 0 as nullptr. 
     D3D11_SDK_VERSION,    // Always specify this.
-    mD3DDevice.GetAddressOf(),          // Output
-    &featureLevel,                      // Output
-    mD3DImmediateContext.GetAddressOf() // Output
+    &pDevice,             // Output
+    &featureLevel,        // Output
+    &pDc                  // Output
   );
+  mD3DDevice = decltype(mD3DDevice){pDevice};
+  mD3DImmediateContext = decltype(mD3DImmediateContext){pDc};
   
   // Error checking.
   if (FAILED(hr))
@@ -207,8 +211,13 @@ HRESULT FD3D11Factory::CreateD3D11SwapChain(
   HR(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
 
   // Create swap chain.
-  HR(dxgiFactory->CreateSwapChain(&device, &descriptor, ownSwapChainRef.GetAddressOf()));
-  HR(dxgiFactory->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_WINDOW_CHANGES));
+  {
+    IDXGISwapChain* pSch = nullptr;
+    HR(dxgiFactory->CreateSwapChain(&device, &descriptor, &pSch));
+    HR(dxgiFactory->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_WINDOW_CHANGES));
+    ownSwapChainRef = IComOwner<IDXGISwapChain>{pSch};
+  }
+
   return S_OK;
 }
 
@@ -242,23 +251,66 @@ D3D11_TEXTURE2D_DESC FD3D11Factory::GetDefaultDepthStencilDesc(unsigned width, u
   return desc;
 }
 
+D3D11_RASTERIZER_DESC FD3D11Factory::GetDefaultRasterStateDesc()
+{
+  static bool isInitialized = false;
+  static D3D11_RASTERIZER_DESC desc = {};
+
+  if (isInitialized == false)
+  {
+    desc.FillMode = D3D11_FILL_SOLID;
+    desc.CullMode = D3D11_CULL_BACK;
+    desc.FrontCounterClockwise = true;
+    desc.DepthBias = INT(0);
+    desc.DepthBiasClamp = FLOAT(0);
+    desc.SlopeScaledDepthBias = 0;
+    desc.DepthClipEnable = true;
+    desc.ScissorEnable = false;
+    desc.MultisampleEnable = false;
+    desc.AntialiasedLineEnable = false;
+
+    isInitialized = true;
+  }
+
+  return desc;
+}
+
+D3D11_DEPTH_STENCIL_DESC FD3D11Factory::GetDefaultDepthStencilStateDesc()
+{
+  static bool isInitialized = false;
+  static D3D11_DEPTH_STENCIL_DESC desc = {};
+
+  if (isInitialized == false)
+  {
+    desc.DepthEnable    = FALSE;
+    desc.DepthFunc      = D3D11_COMPARISON_LESS;
+    desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    desc.StencilEnable  = FALSE;
+    desc.StencilReadMask  = 0xff;
+    desc.StencilWriteMask = 0xff;
+
+    isInitialized = true;
+  }
+
+  return desc;
+}
+
 std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
   ID3D11Device& device,
   bool isDisjoint)
 {
-  IComOwner<ID3D11Query> result = nullptr;
-
   D3D11_QUERY_DESC queryDesc;
   queryDesc.Query = isDisjoint == true ? D3D11_QUERY_TIMESTAMP_DISJOINT : D3D11_QUERY_TIMESTAMP;
   queryDesc.MiscFlags = 0;
 
-  if (device.CreateQuery(&queryDesc, result.GetAddressOf()) != S_OK)
+  ID3D11Query* pQuery = nullptr;
+  if (device.CreateQuery(&queryDesc, &pQuery) != S_OK)
   {
-    result.Release();
+    if (pQuery != nullptr) { pQuery->Release(); }
     return std::nullopt;
   }
 
-  return result;
+  return IComOwner<ID3D11Query>{pQuery};
 }
 
 std::optional<std::pair<IComOwner<ID3D11Query>, IComOwner<ID3D11Query>>>
@@ -271,17 +323,18 @@ FD3D11Factory::CreateTimestampQueryPair(ID3D11Device& device)
   queryDesc.Query = D3D11_QUERY_TIMESTAMP;
   queryDesc.MiscFlags = 0;
 
-  if (device.CreateQuery(&queryDesc, start.GetAddressOf()) != S_OK)
+  ID3D11Query* pStart,* pEnd;
+  if (device.CreateQuery(&queryDesc, &pStart) != S_OK)
   {
-    start.Release();
+    if (pStart != nullptr) { pStart->Release(); }
     return std::nullopt;
   }
 
-  if (device.CreateQuery(&queryDesc, end.GetAddressOf()) != S_OK)
+  if (device.CreateQuery(&queryDesc, &pEnd) != S_OK)
   {
-    end.Release();
+    if (pEnd != nullptr) { pEnd->Release(); }
     return std::nullopt;
   }
 
-  return std::pair{std::move(start), std::move(end)};
+  return std::pair{IComOwner<ID3D11Query>{pStart}, IComOwner<ID3D11Query>{pEnd}};
 }

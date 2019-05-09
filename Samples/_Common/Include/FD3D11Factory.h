@@ -51,6 +51,12 @@ public:
   /// @brief Get default depth stencil texture2D descriptor with (width, height).
   /// FORMAT will be D24_UNORM_S8_UINT.
   static D3D11_TEXTURE2D_DESC GetDefaultDepthStencilDesc(unsigned width, unsigned height);
+
+  /// @brief Get default rasterizer state descriptor.
+  static D3D11_RASTERIZER_DESC GetDefaultRasterStateDesc();
+
+  /// @brief Get default depth-stencil state descriptor.
+  static D3D11_DEPTH_STENCIL_DESC GetDefaultDepthStencilStateDesc();
   
   /// @brief Try create D3D11 default swap-chain.
   static HRESULT CreateD3D11SwapChain(

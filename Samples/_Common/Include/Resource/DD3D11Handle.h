@@ -53,3 +53,7 @@ using D11HandleRTV = DD3D11Handle<ED3D11Resc::RTV>;
 using D11HandleTexture2D = DD3D11Handle<ED3D11Resc::Texture2D>;
 /// @brief Handle type for internal ID3D11DepthStencilView resource.
 using D11HandleDSV = DD3D11Handle<ED3D11Resc::DSV>;
+/// @brief Handle type for internal ID3D11RasterizerState resource.
+using D11HandleRasterState = DD3D11Handle<ED3D11Resc::RasterizerState>;
+/// @brief Handle type for internal ID3D11DepthStencilState resource.
+using D11HandleDepthStencilState = DD3D11Handle<ED3D11Resc::DepthStencilState>;
