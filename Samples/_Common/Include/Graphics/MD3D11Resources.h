@@ -32,26 +32,60 @@ class APlatformBase;
 class MD3D11Resources final
 {
 public:
-  /// @brief
-  /// @param
-  /// @return
+  /// @brief Create default device that supports D3D11.
+  /// @param platform Platform base type instance.
+  /// @return If successful, return device handle instance.
   [[nodiscard]] static std::optional<D11HandleDevice> 
   CreateD3D11DefaultDevice(dy::APlatformBase& platform);
 
-  /// @brief
-  /// @param
-  /// @return
-  [[nodiscard]] static bool HasDevice(const D11HandleDevice& handle);
+  /// @brief Check device resource is valid and in container.
+  /// @param handle Device handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasDevice(const D11HandleDevice& handle) noexcept;
 
-  /// @brief
-  /// @param
-  /// @return
+  /// @brief Get borrow type of Device resource safely. 
+  /// This function does not check whether handle is valid or not and device resource is exist or not.
+  /// That can be checkable for using D11HandleDevice::IsValid() and MD3D11Resources::HasDevice().
+  /// @param handle Valid device handle.
+  /// @return Return borrow type of actual D3D11 device resource.
   static IComBorrow<ID3D11Device> GetDevice(const D11HandleDevice& handle);
 
-  /// @brief
+  /// @brief Get borrow type of Device context resource safely.
+  /// This function does not check whether handle is valid or not and device resource is exist or not.
+  /// That can be checkable for using D11HandleDevice::IsValid() and MD3D11Resources::HasDevice().
+  /// @param handle Valid device handle.
+  /// @return Return borrow type of actual D3D11 device context resource.
+  static IComBorrow<ID3D11DeviceContext> GetDeviceContext(const D11HandleDevice& handle);
+
+  /// @brief Remove device resource with handle.
+  /// @param handle Valid device handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveDevice(const D11HandleDevice& handle);
+
+  /// @brief Create swap-chain of given valid device.
+  /// @param device Valid device handle.
+  /// @param mainHwnd WIN32 main window handle.
+  /// @param desc Descriptor of D3D11 swap-chain.
+  /// @return If successful, return handle of swap chain resource.
+  [[nodiscard]] static std::optional<D11SwapChainHandle>
+  CreateSwapChain(const D11HandleDevice& device, const HWND mainHwnd, DXGI_SWAP_CHAIN_DESC& desc);
+
+  /// @brief Check swap-chain resource is valid and in container.
+  /// @param handle Valid swap-chain handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasSwapChain(const D11SwapChainHandle& handle) noexcept;
+
+  /// @brief 
   /// @param
   /// @return
-  static bool RemoveDevice(const D11HandleDevice& handle);
+  static IComBorrow<IDXGISwapChain> GetSwapChain(const D11SwapChainHandle& handle);
+
+  /// @brief Remove swap-chain resource with handle.
+  /// @param handle Valid swap-chain handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveSwapChain(const D11SwapChainHandle& handle);
+
+  /// @brief
 
 private:
   template <typename TValue>
@@ -61,4 +95,6 @@ private:
 
   /// @brief 
   static THashMap<DD3DResourceDevice> mDevices; 
+  /// @brief
+  static THashMap<IComOwner<IDXGISwapChain>> mSwapChains;
 };
