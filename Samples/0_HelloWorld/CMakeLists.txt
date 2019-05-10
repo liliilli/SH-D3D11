@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD_REQAUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_VERBOSE_MAKEFILE true)
 
-set(D3D11SDK "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)")
+set(WIN31_KIT_INCLUDE "C:\\Program Files (x86)\\Windows Kits\\10\\Include")
+set(WIN31_KIT_NUMBER 10.0.17763.0)
+set(D3D11SDK "${WIN31_KIT_INCLUDE}\\${WIN31_KIT_NUMBER}\\um")
 set(COMMON_INCLUDE "${CMAKE_SOURCE_DIR}\\Samples\\_Common\\Include")
 
 include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
@@ -45,16 +47,10 @@ target_link_libraries(0_HelloWorld
 	PlatformWin32
 )
 target_link_libraries(0_HelloWorld 
-	"${D3D11SDK}/Lib/x64/d3d11.lib"
-	"${D3D11SDK}/Lib/x64/dxgi.lib"
-	"${D3D11SDK}/Lib/x64/DxErr.lib"
+	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/d3d11.lib"
+	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/dxgi.lib"
+	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/D3Dcompiler.lib"
 )
-
-if(${CMAKE_BUILD_TYPE} EQUAL "Debug")
-	target_link_libraries(0_HelloWorld "${D3D11SDK}/Lib/x64/d3dx11d.lib")
-else()
-	target_link_libraries(0_HelloWorld "${D3D11SDK}/Lib/x64/d3dx11.lib")
-endif()
 
 # Install Settings
 set_target_properties(0_HelloWorld
