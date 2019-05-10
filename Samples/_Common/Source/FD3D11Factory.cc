@@ -414,6 +414,40 @@ D3D11_BLEND_DESC FD3D11Factory::GetDefaultBlendStateDesc()
   return desc;
 }
 
+D3D11_QUERY_DESC FD3D11Factory::GetDefaultTimeStampDisjointQueryDesc()
+{
+  static bool isInitialized = false;
+  static D3D11_QUERY_DESC desc = {};
+
+  if (isInitialized == false)
+  {
+    D3D11_QUERY_DESC queryDesc;
+    queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+    queryDesc.MiscFlags = 0;
+
+    isInitialized = true;
+  }
+
+  return desc;
+}
+
+D3D11_QUERY_DESC FD3D11Factory::GetDefaultTimeStampFragmentQueryDesc()
+{
+  static bool isInitialized = false;
+  static D3D11_QUERY_DESC desc = {};
+
+  if (isInitialized == false)
+  {
+    D3D11_QUERY_DESC queryDesc;
+    queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+    queryDesc.MiscFlags = 0;
+
+    isInitialized = true;
+  }
+
+  return desc;
+}
+
 std::optional<IComOwner<ID3D11Query>> FD3D11Factory::CreateTimestampQuery(
   ID3D11Device& device,
   bool isDisjoint)
@@ -456,4 +490,22 @@ FD3D11Factory::CreateTimestampQueryPair(ID3D11Device& device)
   }
 
   return std::pair{IComOwner<ID3D11Query>{pStart}, IComOwner<ID3D11Query>{pEnd}};
+}
+
+std::optional<std::pair<D11HandleQuery, D11HandleQuery>> 
+FD3D11Factory::CreateTimestampQueryPair2(const D11HandleDevice& hDevice)
+{
+  auto start = MD3D11Resources::CreateQuerySimple(hDevice, E11SimpleQueryType::TimeStampFragment);
+  if (start.has_value() == false)
+  {
+    return std::nullopt;
+  }
+    
+  auto end = MD3D11Resources::CreateQuerySimple(hDevice, E11SimpleQueryType::TimeStampFragment);
+  if (end.has_value() == false)
+  {
+    return std::nullopt;
+  }
+
+  return std::pair{*start, *end};
 }

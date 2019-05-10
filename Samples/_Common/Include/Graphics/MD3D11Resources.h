@@ -20,6 +20,7 @@
 #include <Math/Type/Micellanous/DUuid.h>
 #include <Resource/DD3DResourceDevice.h>
 #include <Resource/DD3D11Handle.h>
+#include <Resource/E11SimpleQueryType.h>
 
 namespace dy
 {
@@ -433,12 +434,19 @@ public:
   //! Query
   //!
 
-  /// @brief Create Query of given valid device and optional buffer pointer.
+  /// @brief Create Query of given valid device and descriptor.
   /// @param hDevice Valid device handle.
   /// @param desc Descriptor of D3D11 Query.
   /// @return If successful, retrun handle of Query resource.
   [[nodiscard]] static std::optional<D11HandleQuery>
   CreateQuery(const D11HandleDevice& hDevice, const D3D11_QUERY_DESC& desc); 
+  
+  /// @brief Create Query of given valid device but simply without descriptor.
+  /// @param hDevice Valid device handle.
+  /// @param type Simple Query Type Value
+  /// @return If successful, retrun handle of Query resource.
+  [[nodiscard]] static std::optional<D11HandleQuery>
+  CreateQuerySimple(const D11HandleDevice& hDevice, E11SimpleQueryType type); 
 
   /// @brief Check Query resource is valid and in container.
   /// @param handle Valid Query handle.

@@ -32,6 +32,7 @@ class FD3D11Factory final
 {
 public:
   /// @brief Try to create D3D11 Device.
+  [[deprecated]]
   static std::optional<std::pair<IComOwner<ID3D11Device>, IComOwner<ID3D11DeviceContext>>>
   CreateD3D11Device(dy::APlatformBase& platform);
 
@@ -70,8 +71,15 @@ public:
 
   /// @brief Get default blend state descriptor.
   static D3D11_BLEND_DESC GetDefaultBlendStateDesc();
+
+  /// @brief Get default timestamp_disjoint query descriptor.
+  static D3D11_QUERY_DESC GetDefaultTimeStampDisjointQueryDesc();
+
+  /// @brief Get default timestamp fragment query descriptor.
+  static D3D11_QUERY_DESC GetDefaultTimeStampFragmentQueryDesc();
   
   /// @brief Try create D3D11 default swap-chain.
+  [[deprecated]]
   static HRESULT CreateD3D11SwapChain(
     ID3D11Device& device, 
     HWND pWindowHandle,
@@ -80,13 +88,20 @@ public:
 
   /// @brief Try to create timestamp query.
   /// If failed, just return nullopt.
+  [[deprecated]]
   static std::optional<IComOwner<ID3D11Query>> CreateTimestampQuery(
     ID3D11Device& device,
     bool isDisjoint);
 
   /// @brief Try to create a pair of timestamp fragment (start, end).
   /// If failed, just return nullopt.
+  [[deprecated]]
   static std::optional<std::pair<IComOwner<ID3D11Query>, IComOwner<ID3D11Query>>>
   CreateTimestampQueryPair(ID3D11Device& device);
+
+  /// @brief Try to create a pair of timestamp fragment (start, end).
+  /// If failed, just return nullopt.
+  static std::optional<std::pair<D11HandleQuery, D11HandleQuery>>
+  CreateTimestampQueryPair2(const D11HandleDevice& hDevice);
 };
 

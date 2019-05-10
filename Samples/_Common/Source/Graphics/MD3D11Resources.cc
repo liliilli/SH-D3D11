@@ -12,9 +12,11 @@
 ///
 
 #include <Graphics/MD3D11Resources.h>
-#include <APlatformBase.h>
-#include <HelperMacro.h>
+
 #include <d3dcompiler.h>
+#include <APlatformBase.h>
+#include <FD3D11Factory.h>
+#include <HelperMacro.h>
 
 MD3D11Resources::THashMap<DD3DResourceDevice>         MD3D11Resources::mDevices; 
 MD3D11Resources::THashMap<IComOwner<IDXGISwapChain>>  MD3D11Resources::mSwapChains;
@@ -810,6 +812,40 @@ MD3D11Resources::CreateQuery(const D11HandleDevice& hDevice, const D3D11_QUERY_D
   HR(device->CreateQuery(&desc, &pQuery));
 
   // If pTexture2D is null, just return nullopt.
+  if (pQuery == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mQueries.try_emplace(::dy::math::DUuid{true}, pQuery);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid}; 
+}
+
+std::optional<D11HandleQuery>
+MD3D11Resources::CreateQuerySimple(const D11HandleDevice& hDevice, E11SimpleQueryType type)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  auto device = TThis::GetDevice(hDevice);
+
+  // Create ID3D11Query Resource.
+  ID3D11Query* pQuery = nullptr;
+  D3D11_QUERY_DESC desc = {};
+  switch (type)
+  {
+  case E11SimpleQueryType::TimeStampDisjoint:
+  {
+    desc = FD3D11Factory::GetDefaultTimeStampDisjointQueryDesc();
+  } break;
+  case E11SimpleQueryType::TimeStampFragment:
+  {
+    desc = FD3D11Factory::GetDefaultTimeStampFragmentQueryDesc();
+  } break;
+  }
+
+  // If pQuery is null, just return nullopt.
+  HR(device->CreateQuery(&desc, &pQuery));
   if (pQuery == nullptr) { return std::nullopt; }
 
   // Insert.
