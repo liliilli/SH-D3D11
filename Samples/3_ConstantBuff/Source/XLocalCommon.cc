@@ -18,7 +18,7 @@
 #include <imgui.h>
 
 #include <DWindowHandle.h>
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 #include <MGuiManager.h>
 #include <XPlatform.h>
 

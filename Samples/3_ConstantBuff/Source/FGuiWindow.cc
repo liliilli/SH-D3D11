@@ -14,7 +14,7 @@
 #include <FGuiWindow.h>
 
 #include <imgui.h>
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 #include <XPlatform.h>
 
 FGuiWindow::FGuiWindow(DModelWindow& mModel)

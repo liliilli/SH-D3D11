@@ -26,7 +26,7 @@
 #include <ComWrapper/IComOwner.h>
 #include <ComWrapper/IComBorrow.h>
 #include <FD3D11Factory.h>
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 #include <MGuiManager.h>
 #include <XTriangle.h>
 #include <XCBuffer.h>
@@ -38,6 +38,7 @@
 #include <PLowInputMousePos.h>
 #include <XPlatform.h>
 #include <XLocalCommon.h>
+#include <Graphics/MD3D11Resources.h>
 
 int WINAPI WinMain(
   [[maybe_unused]] HINSTANCE hInstance, 
@@ -54,187 +55,23 @@ int WINAPI WinMain(
   auto optRes = CreateMainWindow("D3D11 3_ConstantBuff", 1280, 720);
   assert(optRes.has_value() == true);
 
-  //!
-  //! D3D11 Setting up
-  //!
-
-  // Crate D3D11 Device & Context
-  auto optDeviceContext = FD3D11Factory::CreateD3D11Device(*platform);
-  assert(optDeviceContext.has_value() == true);
-
-  auto mD3DDevice           = optDeviceContext.value().first.GetBorrow();
-  auto mD3DImmediateContext = optDeviceContext.value().second.GetBorrow();
-
   // Get width and height of main window client region.
   const auto width  = platform->GetWindowWidth(*optRes);
   const auto height = platform->GetWindowHeight(*optRes);
   HWND mainWindowHandle = static_cast<HWND>(platform->_GetHandleOf(*optRes));
 
-  // Describe Swap chain.
-  // https://bell0bytes.eu/the-swap-chain/
-  DXGI_SWAP_CHAIN_DESC sd = FD3D11Factory::GetDefaultSwapChainDesc(width, height, mainWindowHandle);
-
-  // Create swap chain.
-  IComOwner<IDXGISwapChain> mD3DSwapChain = nullptr;
-  FD3D11Factory::CreateD3D11SwapChain(
-    mD3DDevice.Get(), 
-    static_cast<HWND>(platform->_GetHandleOf(*optRes)),
-    sd,
-    mD3DSwapChain);
-
-  // Create render target view (RTV).
-  IComOwner<ID3D11RenderTargetView> mRenderTargetView = nullptr;
-  {
-    IComOwner<ID3D11Texture2D> mBackBufferTexture = nullptr; 
-    // This function increase internal COM instance reference counting.
-    mD3DSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&mBackBufferTexture);
-    mD3DDevice->CreateRenderTargetView(mBackBufferTexture.GetPtr(), nullptr, mRenderTargetView.GetAddressOf());
-  }
-  
-  // Descript Depth/Stencil Buffer and View descriptors.
-  // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_texture2d_desc
-  D3D11_TEXTURE2D_DESC mDepthStencilDesc = FD3D11Factory::GetDefaultDepthStencilDesc(width, height);
-
-  // Create Depth/Stencil View (DSV)
-  IComOwner<ID3D11Texture2D> mDepthStencilBuffer = nullptr;
-  IComOwner<ID3D11DepthStencilView> mDepthStencilView = nullptr;
-
-  // Second parameter of CreateTexture2D is a pointer to initial data to fill the texture with.
-  // We do not specify additional DESC to DSV, leave it inherits properties of Depth/Stencil Texture.
-  HR(mD3DDevice->CreateTexture2D(&mDepthStencilDesc, nullptr, mDepthStencilBuffer.GetAddressOf()));
-  HR(mD3DDevice->CreateDepthStencilView(mDepthStencilBuffer.GetPtr(), nullptr, mDepthStencilView.GetAddressOf()));
-  mD3DImmediateContext->OMSetRenderTargets(1, mRenderTargetView.GetAddressOf(), mDepthStencilView.GetPtr());
-
-  // Set Viewport
-  D3D11_VIEWPORT vp;
-  vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;
-  vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
-  vp.Width    = static_cast<float>(width);
-  vp.Height   = static_cast<float>(height);
-  mD3DImmediateContext->RSSetViewports(1, &vp);
-
-  // Set raster state (RS)
-  IComOwner<ID3D11RasterizerState> ownRasterState = nullptr;
-  {
-    D3D11_RASTERIZER_DESC rasterDesc;
-    rasterDesc.FillMode = D3D11_FILL_SOLID;
-    rasterDesc.CullMode = D3D11_CULL_BACK;
-    rasterDesc.FrontCounterClockwise = true;
-    rasterDesc.DepthBias = INT(0);
-    rasterDesc.DepthBiasClamp = FLOAT(0);
-    rasterDesc.SlopeScaledDepthBias = 0;
-    rasterDesc.DepthClipEnable = true;
-    rasterDesc.ScissorEnable = false;
-    rasterDesc.MultisampleEnable = false;
-    rasterDesc.AntialiasedLineEnable = false;
-
-    HR(mD3DDevice->CreateRasterizerState(&rasterDesc, ownRasterState.GetAddressOf()));
-  }
-  mD3DImmediateContext->RSSetState(ownRasterState.GetPtr());
-
-  // Set rect state.
-  std::array<D3D11_RECT, 1> ownRectState = { D3D11_RECT {0, 0, 1280, 720} };
-  mD3DImmediateContext->RSSetScissorRects(1, ownRectState.data());
-
-  // Set depth stencil state
-  IComOwner<ID3D11DepthStencilState> ownDepthStencilState = nullptr;
-  {
-    D3D11_DEPTH_STENCIL_DESC dssd = {};
-    dssd.DepthEnable    = FALSE;
-    dssd.DepthFunc      = D3D11_COMPARISON_LESS;
-    dssd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-    dssd.StencilEnable  = FALSE;
-    dssd.StencilReadMask  = 0xff;
-    dssd.StencilWriteMask = 0xff;
-
-    HR(mD3DDevice->CreateDepthStencilState(&dssd, ownDepthStencilState.GetAddressOf()));
-  }
-  mD3DImmediateContext->OMSetDepthStencilState(ownDepthStencilState.GetPtr(), 0x00);
-
-  // Set blend state
-  IComOwner<ID3D11BlendState> ownBlendState = nullptr;
-  {
-    D3D11_BLEND_DESC blendDesc = {};
-    {
-      D3D11_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
-      rtBlendDesc.BlendEnable   = TRUE;
-      rtBlendDesc.BlendOp       = D3D11_BLEND_OP_ADD;
-      rtBlendDesc.BlendOpAlpha  = D3D11_BLEND_OP_ADD;
-      rtBlendDesc.SrcBlend      = D3D11_BLEND_SRC_ALPHA;
-      rtBlendDesc.DestBlend     = D3D11_BLEND_INV_SRC_ALPHA;
-      rtBlendDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
-      rtBlendDesc.DestBlendAlpha= D3D11_BLEND_ZERO;
-      rtBlendDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL; 
-      blendDesc.RenderTarget[0] = rtBlendDesc; 
-    }
-    blendDesc.AlphaToCoverageEnable = false;
-    blendDesc.IndependentBlendEnable = false;
-
-    HR(mD3DDevice->CreateBlendState(&blendDesc, ownBlendState.GetAddressOf()));
-  }
-  const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
-  mD3DImmediateContext->OMSetBlendState(ownBlendState.GetPtr(), blendFactor, 0xFFFFFFFF);
-
   //!
-  //! Shader Compilation 
+  //! D3D11 Setting up
   //!
 
-  IComOwner<ID3D11VertexShader> ownVertexShader = nullptr;
-  IComOwner<ID3D11InputLayout> ownVsLayout = nullptr;
+  const auto optDefaults = FD3D11Factory::CreateDefaultFrameBuffer(*platform, *optRes);
+  assert(optDefaults.has_value() == true);
+  const auto& defaults = *optDefaults;
+
+  // Create vertex & indice buffers and constant buffers
+  D11HandleBuffer handleVertexBuffer = nullptr;
   {
-    IComOwner<ID3DBlob> ownVsBlob = nullptr;
-    HR(FD3D11Factory::CompileShaderFromFile(
-      *platform,
-      "../../Resource/Shader.fx", "VS", "vs_5_0", ownVsBlob.GetAddressOf()));
-
-    HR(mD3DDevice->CreateVertexShader(
-      ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(), 
-      nullptr, 
-      ownVertexShader.GetAddressOf()));
-   
-    // Create Vertex shader input layout.
-    // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_input_element_desc
-    std::array<D3D11_INPUT_ELEMENT_DESC, 2> vertexDesc =
-    {
-      decltype(vertexDesc)::value_type
-      {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA , 0},
-      {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-
-    HR(mD3DDevice->CreateInputLayout(
-      vertexDesc.data(), static_cast<UINT>(vertexDesc.size()), 
-      ownVsBlob->GetBufferPointer(), ownVsBlob->GetBufferSize(),
-      ownVsLayout.GetAddressOf()));
-
-    ownVsBlob.Release();
-  }
-  // Set layout into logical device context.
-  mD3DImmediateContext->IASetInputLayout(ownVsLayout.GetPtr());
-
-  // Compile Pixel Shader 
-  // "PS" is entry point.
-  IComOwner<ID3D11PixelShader> ownPsShader = nullptr;
-  {
-    IComOwner<ID3DBlob> ownPsBlob = nullptr;
-    HR(FD3D11Factory::CompileShaderFromFile(
-      *platform, 
-      "../../Resource/Shader.fx", "PS", "ps_5_0", ownPsBlob.GetAddressOf()));
-
-    HR(mD3DDevice->CreatePixelShader(
-      ownPsBlob->GetBufferPointer(), ownPsBlob->GetBufferSize(), 
-      nullptr, 
-      ownPsShader.GetAddressOf()));
-    ownPsBlob.Release();
-  }
-
-  //!
-  //! Mesh Buffer Setting up
-  //!
-
-  // * Build Geometry Buffers.
-  IComOwner<ID3D11Buffer> vBuffer = nullptr;
-  {
-    D3D11_BUFFER_DESC vbDesc;
+    D3D11_BUFFER_DESC vbDesc = {};
     vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
     vbDesc.ByteWidth = sizeof(vertices);
     vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -242,13 +79,11 @@ int WINAPI WinMain(
     vbDesc.MiscFlags = 0;
     vbDesc.StructureByteStride = 0;
 
-    D3D11_SUBRESOURCE_DATA vbData;
-    vbData.pSysMem = vertices.data();
-
-    HR(mD3DDevice->CreateBuffer(&vbDesc, &vbData, vBuffer.GetAddressOf()));
+    handleVertexBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, vbDesc, vertices.data());
+    assert(MD3D11Resources::HasBuffer(handleVertexBuffer) == true);
   }
 
-  IComOwner<ID3D11Buffer> iBuffer = nullptr;
+  D11HandleBuffer handleIndiceBuffer = nullptr;
   {
     D3D11_BUFFER_DESC ibDesc;
     ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -258,13 +93,11 @@ int WINAPI WinMain(
     ibDesc.MiscFlags = 0;
     ibDesc.StructureByteStride = 0;
 
-    D3D11_SUBRESOURCE_DATA ibData;
-    ibData.pSysMem = indices.data();
-
-    HR(mD3DDevice->CreateBuffer(&ibDesc, &ibData, iBuffer.GetAddressOf()));    
+    handleIndiceBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, ibDesc, indices.data());
+    assert(MD3D11Resources::HasBuffer(handleIndiceBuffer) == true);
   }
 
-  IComOwner<ID3D11Buffer> cBuffer = nullptr;
+  D11HandleBuffer handleConstantBuffer = nullptr;
   {
     D3D11_BUFFER_DESC desc;
     desc.Usage      = D3D11_USAGE_DEFAULT;
@@ -274,88 +107,253 @@ int WINAPI WinMain(
     desc.MiscFlags = 0;
     desc.StructureByteStride = 0;
 
-    DCbScale initScale;
-    initScale.mScale = 0.5f;
+    DCbScale initScale; initScale.mScale = 0.5f;
 
-    D3D11_SUBRESOURCE_DATA initData;
-    initData.pSysMem = &initScale;
-    initData.SysMemPitch = 0;
-    initData.SysMemSlicePitch = 0;
-
-    HR(mD3DDevice->CreateBuffer(&desc, &initData, cBuffer.GetAddressOf()));
+    handleConstantBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, desc, &initScale);
+    assert(MD3D11Resources::HasBuffer(handleConstantBuffer) == true);
   }
-   
-  // Set topologies.
-  mD3DImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  UINT stride = sizeof(DVertex);
-  UINT offset = 0;
-  mD3DImmediateContext->IASetVertexBuffers(0, 1, vBuffer.GetAddressOf(), &stride, &offset);
-  mD3DImmediateContext->IASetIndexBuffer(iBuffer.GetPtr(), DXGI_FORMAT_R32_UINT, 0);
-  mD3DImmediateContext->VSSetConstantBuffers(0, 1, cBuffer.GetAddressOf());
 
   //!
-  //! Queries & ImGui Setting up
+  //! Create shaders and input layer.
+  //!
+
+  D11HandleVS handleVS = nullptr;
+  D11HandleInputLayout handleIL = nullptr;
+  {
+    const auto optVsBlob = FD3D11Factory::CompileShaderFromFile2(
+      *platform, "../../Resource/Shader.fx", "VS", "vs_5_0");
+    assert(optVsBlob.has_value() == true);
+
+    const auto optVs = MD3D11Resources::CreateVertexShader(defaults.mDevice, *optVsBlob);
+    assert(optVs.has_value() == true);
+
+    // Create Vertex shader input layout.
+    // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_input_element_desc
+    std::array<D3D11_INPUT_ELEMENT_DESC, 2> vertexDesc =
+    {
+      decltype(vertexDesc)::value_type
+      {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA , 0},
+      {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+
+    const auto optIL = MD3D11Resources::CreateInputLayout(
+      defaults.mDevice, *optVsBlob, vertexDesc.data(), vertexDesc.size());
+    assert(optIL.has_value() == true);
+
+    handleVS = *optVs;
+    handleIL = *optIL;
+    MD3D11Resources::RemoveBlob(*optVsBlob);
+  }
+
+  D11HandlePS handlePS = nullptr;
+  {
+    const auto optPSBlob = FD3D11Factory::CompileShaderFromFile2(
+      *platform, "../../Resource/Shader.fx", "PS", "ps_5_0");
+    assert(optPSBlob.has_value() == true);
+
+    const auto optPS = MD3D11Resources::CreatePixelShader(defaults.mDevice, *optPSBlob);
+    assert(optPS.has_value() == true);
+    handlePS = *optPS;
+
+    MD3D11Resources::RemoveBlob(*optPSBlob);
+  }
+
+  //!
+  //! Create Queries
   //!
 
   // Make timestamp queries (disjoint and start-end queries)
   // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3d11/nf-d3d11-id3d11device-createquery
-  IComOwner<ID3D11Query> ownDisjointQuery = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), true);
-  auto [ownGpuStartFrameQuery, ownGpuEndFrameQuery] = *FD3D11Factory::CreateTimestampQueryPair(mD3DDevice.Get());
-  auto [ownStartCbUpdate, ownEndCbUpdate] = *FD3D11Factory::CreateTimestampQueryPair(mD3DDevice.Get());
-  auto [ownStartDraw, ownEndDraw] = *FD3D11Factory::CreateTimestampQueryPair(mD3DDevice.Get());
+  auto handleDisjoint = *MD3D11Resources::CreateQuerySimple(defaults.mDevice, E11SimpleQueryType::TimeStampDisjoint);
+  auto [handleFrameStart, handleFrameEnd] = *FD3D11Factory::CreateTimestampQueryPair2(defaults.mDevice);
+  auto [handleCbStart, handleCbEnd] = *FD3D11Factory::CreateTimestampQueryPair2(defaults.mDevice);
+  auto [handleDrawStart, handleDrawEnd] = *FD3D11Factory::CreateTimestampQueryPair2(defaults.mDevice);
+
+  //!
+  //! Set initial settings.
+  //!
+
+  // 1. Set RTV and DSV
+  {
+    auto bDevice = MD3D11Resources::GetDevice(defaults.mDevice);
+    auto d3dDc   = MD3D11Resources::GetDeviceContext(defaults.mDevice);
+    {
+      auto bRTV     = MD3D11Resources::GetRTV(defaults.mRTV);
+      auto bDSV     = MD3D11Resources::GetDSV(defaults.mDSV);
+      auto* pRTV    = bRTV.GetPtr();
+
+      d3dDc->OMSetRenderTargets(1, &pRTV, bDSV.GetPtr());
+    }
+
+    // 2. Set Viewport
+    {
+      D3D11_VIEWPORT vp;
+      vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;
+      vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
+      vp.Width    = static_cast<float>(width);
+      vp.Height   = static_cast<float>(height);
+      d3dDc->RSSetViewports(1, &vp);
+    }
+
+    // 3. Set Render, Rect, Deptn-Stencil, Blend states
+    // A. Set raster state (RS)
+    {
+      auto bRS = MD3D11Resources::GetRasterState(defaults.mRasterState);
+      d3dDc->RSSetState(bRS.GetPtr());
+
+      // B. Set rect state.
+      std::array<D3D11_RECT, 1> ownRectState = { D3D11_RECT {0, 0, 1280, 720} };
+      d3dDc->RSSetScissorRects(1, ownRectState.data());
+
+      // C. Set depth stencil state
+      auto bDSS = MD3D11Resources::GetDepthStencilState(defaults.mDepthStencilState);
+      d3dDc->OMSetDepthStencilState(bDSS.GetPtr(), 0x00);
+
+      // D. Set blend state
+      auto bBS = MD3D11Resources::GetBlendState(defaults.mBlendState);
+      const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
+      d3dDc->OMSetBlendState(bBS.GetPtr(), blendFactor, 0xFFFFFFFF);
+    }
+     
+    // 4. Set topologies.
+    {
+      auto vBuffer  = MD3D11Resources::GetBuffer(handleVertexBuffer);
+      auto iBuffer  = MD3D11Resources::GetBuffer(handleIndiceBuffer);
+      auto cBuffer  = MD3D11Resources::GetBuffer(handleConstantBuffer);
+      auto* pVBuffer= vBuffer.GetPtr();
+      auto* pCBuffer= cBuffer.GetPtr();
+
+      d3dDc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+      // 5. Set layout into logical device context.
+      auto bIL = MD3D11Resources::GetInputLayout(handleIL);
+      d3dDc->IASetInputLayout(bIL.GetPtr());
+
+      // 6. Set Vertex & Index & Constant Buffers
+      UINT stride = sizeof(DVertex);
+      UINT offset = 0;
+      d3dDc->IASetVertexBuffers(0, 1, &pVBuffer, &stride, &offset);
+      d3dDc->IASetIndexBuffer(iBuffer.GetPtr(), DXGI_FORMAT_R32_UINT, 0);
+      d3dDc->VSSetConstantBuffers(0, 1, &pCBuffer);
+    }
+  }
+ 
+  //!
+  //! Set up ImGui settings.
+  //!
 
   // Setup Dear ImGui context
-  SetupGuiSettings(*optRes, *(*optDeviceContext).first, *(*optDeviceContext).second);
+  {
+    auto bDevice = MD3D11Resources::GetDevice(defaults.mDevice);
+    auto d3dDc   = MD3D11Resources::GetDeviceContext(defaults.mDevice);
+    SetupGuiSettings(*optRes, bDevice.GetRef(), d3dDc.GetRef());
+  }
+
   auto& windowModel = *MGuiManager::CreateSharedModel<DModelWindow>("Window");
   MGuiManager::CreateGui<FGuiWindow>("Window", std::ref(windowModel));
 
-  // Loop
-	while (platform->CanShutdown() == false)
-	{
-    // Update Routine
-    TIME_CHECK_CPU("CpuFrame");
-    //auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
-    platform->PollEvents();
-  
-    MGuiManager::Update();
+  {
+    auto bDevice      = MD3D11Resources::GetDevice(defaults.mDevice);
+    auto d3dDc        = MD3D11Resources::GetDeviceContext(defaults.mDevice);
+    auto bRTV         = MD3D11Resources::GetRTV(defaults.mRTV);
+    auto bDSV         = MD3D11Resources::GetDSV(defaults.mDSV);
+    auto bVS          = MD3D11Resources::GetVertexShader(handleVS);
+    auto bPS          = MD3D11Resources::GetPixelShader(handlePS);
 
-    // Render Routine
-    TIME_CHECK_D3D11_STALL(gpuTime, "GpuFrame", *ownDisjointQuery, mD3DImmediateContext.Get());
+    auto bDisjoint    = MD3D11Resources::GetQuery(handleDisjoint);
+    auto bFrameStart  = MD3D11Resources::GetQuery(handleFrameStart);
+    auto bFrameEnd    = MD3D11Resources::GetQuery(handleFrameEnd);
+    auto bCbStart     = MD3D11Resources::GetQuery(handleCbStart);
+    auto bCbEnd       = MD3D11Resources::GetQuery(handleCbEnd);
+    auto bDrawStart   = MD3D11Resources::GetQuery(handleDrawStart);
+    auto bDrawEnd     = MD3D11Resources::GetQuery(handleDrawEnd);
+
+    auto bSwapCHain   = MD3D11Resources::GetSwapChain(defaults.mSwapChain);
+    auto cBuffer      = MD3D11Resources::GetBuffer(handleConstantBuffer);
+
+    // Loop
+    while (platform->CanShutdown() == false)
     {
-      TIME_CHECK_FRAGMENT(gpuTime, "Overall", *ownGpuStartFrameQuery, *ownGpuEndFrameQuery);
+      // Update Routine
+      TIME_CHECK_CPU("CpuFrame");
+      //auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
+      platform->PollEvents();
+      MGuiManager::Update();
 
-      mD3DImmediateContext->ClearRenderTargetView(
-        mRenderTargetView.GetPtr(), 
-        std::array<FLOAT, 4>{0, 0, 0, 1}.data());
-      mD3DImmediateContext->ClearDepthStencilView(mDepthStencilView.GetPtr(), 
-        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-        1.0f,
-        0);
-
-      // https://bell0bytes.eu/shader-data/
+      // Render Routine
+      TIME_CHECK_D3D11_STALL(gpuTime, "GpuFrame", bDisjoint.GetRef(), d3dDc.GetRef());
       {
-        TIME_CHECK_FRAGMENT(gpuTime, "CBuffer", *ownStartCbUpdate, *ownEndCbUpdate);
+        TIME_CHECK_FRAGMENT(gpuTime, "Overall", bFrameStart.GetRef(), bFrameEnd.GetRef());
 
-        DCbScale scale;
-        scale.mScale = windowModel.mScale;
-        mD3DImmediateContext->UpdateSubresource(cBuffer.GetPtr(), 0, nullptr, &scale, 0, 0);
+        d3dDc->ClearRenderTargetView(bRTV.GetPtr(), std::array<FLOAT, 4>{0, 0, 0, 1}.data());
+        d3dDc->ClearDepthStencilView(bDSV.GetPtr(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+        // https://bell0bytes.eu/shader-data/
+        {
+          TIME_CHECK_FRAGMENT(gpuTime, "CBuffer", bCbStart.GetRef(), bCbEnd.GetRef());
+
+          DCbScale scale;
+          scale.mScale = windowModel.mScale;
+          d3dDc->UpdateSubresource(cBuffer.GetPtr(), 0, nullptr, &scale, 0, 0);
+        }
+
+        d3dDc->VSSetShader(bVS.GetPtr(), nullptr, 0);
+        d3dDc->PSSetShader(bPS.GetPtr(), nullptr, 0);
+
+        {
+          TIME_CHECK_FRAGMENT(gpuTime, "Draw", bDrawStart.GetRef(), bDrawEnd.GetRef());
+          d3dDc->DrawIndexed(3, 0, 0);
+        }
+
+        MGuiManager::Render();
+
+        // Present the back buffer to the screen.
+        HR(bSwapCHain->Present(1, 0));
       }
-
-      mD3DImmediateContext->VSSetShader(ownVertexShader.GetPtr(), nullptr, 0);
-      mD3DImmediateContext->PSSetShader(ownPsShader.GetPtr(), nullptr, 0);
-
-      {
-        TIME_CHECK_FRAGMENT(gpuTime, "Draw", *ownStartDraw, *ownEndDraw);
-        mD3DImmediateContext->DrawIndexed(3, 0, 0);
-      }
-
-      MGuiManager::Render();
-      // Present the back buffer to the screen.
-      HR(mD3DSwapChain->Present(1, 0));
     }
-	}
+  }
 
   MGuiManager::Shutdown();
+  
+  // Remove all resources.
+  {
+    MD3D11Resources::RemoveQuery(handleFrameStart);
+    MD3D11Resources::RemoveQuery(handleFrameEnd);
+    MD3D11Resources::RemoveQuery(handleCbStart);
+    MD3D11Resources::RemoveQuery(handleCbEnd);
+    MD3D11Resources::RemoveQuery(handleDrawStart);
+    MD3D11Resources::RemoveQuery(handleDrawEnd);
+    MD3D11Resources::RemoveQuery(handleDisjoint);
+  }
+  {
+    const auto flag = MD3D11Resources::RemovePixelShader(handlePS);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveInputLayout(handleIL);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveVertexShader(handleVS);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveBuffer(handleConstantBuffer);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveBuffer(handleIndiceBuffer);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveBuffer(handleVertexBuffer);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveDefaultFrameBufferResouce(*optDefaults);
+    assert(flag == true);
+  }
+
   platform->RemoveAllWindow();
   platform->RemoveConsoleWindow();
   platform->ReleasePlatform();
