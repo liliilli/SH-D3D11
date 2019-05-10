@@ -11,7 +11,7 @@
 # SOFTWARE.
 #
 cmake_minimum_required (VERSION 3.8)
-project(2_ImGui CXX)
+project(2_ConstantBuff CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQAUIRED ON)
@@ -28,12 +28,9 @@ include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.1.0/ucrt)
 
 set(SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 set(SOURCE
-	"${SOURCE_DIRECTORY}/Entry.cc"
-	"${SOURCE_DIRECTORY}/FGuiHelloWorld.cc"
-	"${SOURCE_DIRECTORY}/FGuiBackground.cc"
-	"${SOURCE_DIRECTORY}/FGuiMainMenu.cc"
-	"${SOURCE_DIRECTORY}/FGuiProfiling.cc"
-	"${SOURCE_DIRECTORY}/FGuiAbout.cc"
+	"${SOURCE_DIRECTORY}/XEntry.cc"
+	"${SOURCE_DIRECTORY}/FGuiWindow.cc"
+	"${SOURCE_DIRECTORY}/XLocalCommon.cc"
 	"${SOURCE_DIRECTORY}/XPlatform.cc"
 )
 
@@ -49,11 +46,11 @@ set(IMGUI_SOURCE
 include_directories("./Include")
 
 # https://faithandbrave.hateblo.jp/entry/2014/05/22/174050
-add_executable(2_ImGui WIN32 
+add_executable(2_ConstantBuff WIN32 
 	${SOURCE} 
 	${IMGUI_SOURCE}
 )
-target_include_directories(2_ImGui
+target_include_directories(2_ConstantBuff
 PUBLIC
 	${COMMON_INCLUDE}
 	${CMAKE_CURRENT_SOURCE_DIR}/Include
@@ -68,27 +65,27 @@ PRIVATE
 	${CMAKE_SOURCE_DIR}/Platform/NativePlatformBase/Include	
 	${CMAKE_SOURCE_DIR}/Platform/PlatformWin32/Include	
 )
-set_target_properties(2_ImGui PROPERTIES 
+set_target_properties(2_ConstantBuff PROPERTIES 
 	LINKER_LANGUAGE CXX
 )
 add_definitions(-D_CRT_SECURE_NO_WARNINGS -DUNICODE)
 
 # Add dependencies.
-target_link_libraries(2_ImGui 
+target_link_libraries(2_ConstantBuff 
 	DyStringUtil
 	DyMath
 	InputsBase
 	PlatformWin32
 	Common
 )
-target_link_libraries(2_ImGui 
+target_link_libraries(2_ConstantBuff 
 	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/d3d11.lib"
 	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/dxgi.lib"
 	"${D3D11SDK}/../../../Lib/10.0.17763.0/um/x64/D3Dcompiler.lib"
 )
 
 # Install Settings
-set_target_properties(2_ImGui
+set_target_properties(2_ConstantBuff
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}\\lib\\${CMAKE_BUILD_TYPE}"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}\\lib\\${CMAKE_BUILD_TYPE}"

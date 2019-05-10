@@ -52,7 +52,7 @@ int WINAPI WinMain(
   platform = std::make_unique<dy::FWindowsPlatform>();
   platform->InitPlatform();
   platform->CreateConsoleWindow();
-  auto optRes = CreateMainWindow("D3D11 3_ConstantBuff", 1280, 720);
+  auto optRes = CreateMainWindow("D3D11 2_ConstantBuff", 1280, 720);
   assert(optRes.has_value() == true);
 
   // Get width and height of main window client region.
@@ -196,8 +196,8 @@ int WINAPI WinMain(
     }
 
     // 3. Set Render, Rect, Deptn-Stencil, Blend states
-    // A. Set raster state (RS)
     {
+      // A. Set raster state (RS)
       auto bRS = MD3D11Resources::GetRasterState(defaults.mRasterState);
       d3dDc->RSSetState(bRS.GetPtr());
 

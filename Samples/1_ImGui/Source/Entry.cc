@@ -96,7 +96,7 @@ int WINAPI WinMain(
   platform = std::make_unique<dy::FWindowsPlatform>();
   platform->InitPlatform();
   platform->CreateConsoleWindow();
-  auto optRes = CreateMainWindow("D3D11 2_ImGui", 1280, 720);
+  auto optRes = CreateMainWindow("D3D11 1_ImGui", 1280, 720);
   assert(optRes.has_value() == true);
 
   const auto& checker = MTimeChecker::Get("CreateMainWindow");
@@ -116,43 +116,34 @@ int WINAPI WinMain(
     auto d3dDc   = MD3D11Resources::GetDeviceContext(defaults.mDevice);
 
     // 1. Set RTV and DSV
-    {
-      auto bRTV     = MD3D11Resources::GetRTV(defaults.mRTV);
-      auto bDSV     = MD3D11Resources::GetDSV(defaults.mDSV);
-      auto* pRTV    = bRTV.GetPtr();
-
-      d3dDc->OMSetRenderTargets(1, &pRTV, bDSV.GetPtr());
-    }
+    auto bRTV     = MD3D11Resources::GetRTV(defaults.mRTV);
+    auto bDSV     = MD3D11Resources::GetDSV(defaults.mDSV);
+    auto* pRTV    = bRTV.GetPtr();
+    d3dDc->OMSetRenderTargets(1, &pRTV, bDSV.GetPtr());
 
     // 2. Set Viewport
-    {
-      D3D11_VIEWPORT vp;
-      vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;
-      vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
-      vp.Width    = static_cast<float>(width);
-      vp.Height   = static_cast<float>(height);
-      d3dDc->RSSetViewports(1, &vp);
-    }
+    D3D11_VIEWPORT vp;
+    vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;   vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
+    vp.Width    = static_cast<float>(width);  vp.Height   = static_cast<float>(height);
+    d3dDc->RSSetViewports(1, &vp);
 
     // 3. Set Render, Rect, Deptn-Stencil, Blend states
-    {
-      // A. Set raster state (RS)
-      auto bRS = MD3D11Resources::GetRasterState(defaults.mRasterState);
-      d3dDc->RSSetState(bRS.GetPtr());
+    // A. Set raster state (RS)
+    auto bRS = MD3D11Resources::GetRasterState(defaults.mRasterState);
+    d3dDc->RSSetState(bRS.GetPtr());
 
-      // B. Set rect state.
-      std::array<D3D11_RECT, 1> ownRectState = { D3D11_RECT {0, 0, 1280, 720} };
-      d3dDc->RSSetScissorRects(1, ownRectState.data());
+    // B. Set rect state.
+    std::array<D3D11_RECT, 1> ownRectState = { D3D11_RECT {0, 0, 1280, 720} };
+    d3dDc->RSSetScissorRects(1, ownRectState.data());
 
-      // C. Set depth stencil state
-      auto bDSS = MD3D11Resources::GetDepthStencilState(defaults.mDepthStencilState);
-      d3dDc->OMSetDepthStencilState(bDSS.GetPtr(), 0x00);
+    // C. Set depth stencil state
+    auto bDSS = MD3D11Resources::GetDepthStencilState(defaults.mDepthStencilState);
+    d3dDc->OMSetDepthStencilState(bDSS.GetPtr(), 0x00);
 
-      // D. Set blend state
-      auto bBS = MD3D11Resources::GetBlendState(defaults.mBlendState);
-      const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
-      d3dDc->OMSetBlendState(bBS.GetPtr(), blendFactor, 0xFFFFFFFF);
-    }
+    // D. Set blend state
+    auto bBS = MD3D11Resources::GetBlendState(defaults.mBlendState);
+    const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
+    d3dDc->OMSetBlendState(bBS.GetPtr(), blendFactor, 0xFFFFFFFF);
   }
 
   // Make timestamp queries (disjoint and start-end queries)
