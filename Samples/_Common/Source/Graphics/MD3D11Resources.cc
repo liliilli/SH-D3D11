@@ -830,7 +830,6 @@ MD3D11Resources::CreateQuerySimple(const D11HandleDevice& hDevice, E11SimpleQuer
   auto device = TThis::GetDevice(hDevice);
 
   // Create ID3D11Query Resource.
-  ID3D11Query* pQuery = nullptr;
   D3D11_QUERY_DESC desc = {};
   switch (type)
   {
@@ -845,6 +844,7 @@ MD3D11Resources::CreateQuerySimple(const D11HandleDevice& hDevice, E11SimpleQuer
   }
 
   // If pQuery is null, just return nullopt.
+  ID3D11Query* pQuery = nullptr;
   HR(device->CreateQuery(&desc, &pQuery));
   if (pQuery == nullptr) { return std::nullopt; }
 
@@ -877,6 +877,10 @@ bool MD3D11Resources::RemoveQuery(const D11HandleQuery& handle)
   TThis::mQueries.erase(handle.GetUuid());
   return true;
 }
+
+//!
+//! Micellanous
+//!
 
 bool MD3D11Resources::RemoveDefaultFrameBufferResouce(const D11DefaultHandles& handles)
 {

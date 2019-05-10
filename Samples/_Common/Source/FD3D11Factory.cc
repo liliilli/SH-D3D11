@@ -506,9 +506,8 @@ D3D11_QUERY_DESC FD3D11Factory::GetDefaultTimeStampDisjointQueryDesc()
 
   if (isInitialized == false)
   {
-    D3D11_QUERY_DESC queryDesc;
-    queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
-    queryDesc.MiscFlags = 0;
+    desc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+    desc.MiscFlags = 0;
 
     isInitialized = true;
   }
@@ -523,9 +522,8 @@ D3D11_QUERY_DESC FD3D11Factory::GetDefaultTimeStampFragmentQueryDesc()
 
   if (isInitialized == false)
   {
-    D3D11_QUERY_DESC queryDesc;
-    queryDesc.Query = D3D11_QUERY_TIMESTAMP;
-    queryDesc.MiscFlags = 0;
+    desc.Query = D3D11_QUERY_TIMESTAMP;
+    desc.MiscFlags = 0;
 
     isInitialized = true;
   }

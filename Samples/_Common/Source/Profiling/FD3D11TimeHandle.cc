@@ -101,6 +101,19 @@ FD3D11TimeHandle::CalculateTimestamps(
 
     // Get All the timestamps.
     UINT64 tsBeginFrame, tsEndFrame;
+#if defined(_DEBUG)
+    {
+      D3D11_QUERY_DESC desc;
+      start->GetDesc(&desc);
+      assert(desc.Query == decltype(desc.Query)::D3D11_QUERY_TIMESTAMP);
+    }
+
+    {
+      D3D11_QUERY_DESC desc;
+      end->GetDesc(&desc);
+      assert(desc.Query == decltype(desc.Query)::D3D11_QUERY_TIMESTAMP);
+    }
+#endif
     dc.GetData(start, &tsBeginFrame, sizeof(UINT64), 0);
     dc.GetData(end, &tsEndFrame, sizeof(UINT64), 0);
 
