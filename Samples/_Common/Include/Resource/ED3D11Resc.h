@@ -13,16 +13,21 @@
 ///
 
 /// @enum ED3D11Resc
-/// @brief
+/// @brief Resource types of D3D11.
 enum class ED3D11Resc 
 {
-  Device,     // ID3D11Device & ID3D11DeviceContext.
-  SwapChain,  // ID3D11SwapChain
-  RTV,        // ID3D11RenderTargetView
-  DSV,        // ID3D11DepthStencilView
-  Texture2D,  // ID3D11Texture2D
+  Device,           // ID3D11Device & ID3D11DeviceContext.
+  SwapChain,        // ID3D11SwapChain
+  RTV,              // ID3D11RenderTargetView
+  DSV,              // ID3D11DepthStencilView
   RasterizerState,  // ID3D11RasterizerState 
   DepthStencilState,// ID3D11DepthStencilState
-  BlendState, // ID3D11BlendState
-  Buffer,     // ID3D11Buffer
+  BlendState,       // ID3D11BlendState
+  VertexShader,     // ID3D11VertexShader
+  PixelShader,      // ID3D11PixelShader
+  InputLayout,      // ID3D11InputLayout
+  Buffer,           // ID3D11Buffer
+  Texture2D,        // ID3D11Texture2D
+  Blob,             // ID3D11Blob
+  Query,            // ID3D11Query
 };

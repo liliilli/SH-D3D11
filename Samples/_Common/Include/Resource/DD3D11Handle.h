@@ -49,8 +49,6 @@ using D11HandleDevice = DD3D11Handle<ED3D11Resc::Device>;
 using D11SwapChainHandle = DD3D11Handle<ED3D11Resc::SwapChain>;
 /// @brief
 using D11HandleRTV = DD3D11Handle<ED3D11Resc::RTV>;
-/// @brief Handle type for internal ID3D11Texture2D resource.
-using D11HandleTexture2D = DD3D11Handle<ED3D11Resc::Texture2D>;
 /// @brief Handle type for internal ID3D11DepthStencilView resource.
 using D11HandleDSV = DD3D11Handle<ED3D11Resc::DSV>;
 /// @brief Handle type for internal ID3D11RasterizerState resource.
@@ -61,3 +59,15 @@ using D11HandleDepthStencilState = DD3D11Handle<ED3D11Resc::DepthStencilState>;
 using D11HandleBlendState = DD3D11Handle<ED3D11Resc::BlendState>;
 /// @brief Handle type for internal ID3D11Buffer resource.
 using D11HandleBuffer = DD3D11Handle<ED3D11Resc::Buffer>;
+/// @brief Handle type for internal ID3D11VertexShader resource.
+using D11HandleVS = DD3D11Handle<ED3D11Resc::VertexShader>;
+/// @brief Handle type for internal ID3D11PixelShader resource.
+using D11HandlePS = DD3D11Handle<ED3D11Resc::PixelShader>;
+/// @brief Handle type for internal ID3D11InputLayout resource.
+using D11HandleInputLayout = DD3D11Handle<ED3D11Resc::InputLayout>;
+/// @brief Handle type for internal ID3D11Texture2D resource.
+using D11HandleTexture2D = DD3D11Handle<ED3D11Resc::Texture2D>;
+/// @brief Handle type for internal ID3DBlob (ID3D10Blob) resource.
+using D11HandleBlob = DD3D11Handle<ED3D11Resc::Blob>;
+/// @brief Handle type for internal ID3D11Query resource.
+using D11HandleQuery = DD3D11Handle<ED3D11Resc::Query>;

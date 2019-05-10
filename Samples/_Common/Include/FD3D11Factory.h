@@ -14,9 +14,11 @@
 
 #include <optional>
 #include <string>
+#include <filesystem>
 #include <D3D11.h>
 
 #include <ComWrapper/IComOwner.h>
+#include <Resource/DD3D11Handle.h>
 
 namespace dy
 {
@@ -34,12 +36,20 @@ public:
   CreateD3D11Device(dy::APlatformBase& platform);
 
   /// @brief Try compile shader from file.
-  static HRESULT CompileShaderFromFile(
+  [[deprecated]] static HRESULT CompileShaderFromFile(
     dy::APlatformBase& platform,
     const std::string& szFilePath, 
     LPCSTR szEntryPoint, 
     LPCSTR szShaderModel, 
     ID3DBlob** ppBlobOut);
+
+  /// @brief Try compile shader from file.
+  static std::optional<D11HandleBlob> CompileShaderFromFile2(
+    dy::APlatformBase& platform,
+    const std::filesystem::path& filePath,
+    const std::string& entryPointFunc,
+    const std::string& shaderModel,
+    HRESULT* outResult = nullptr);
 
   /// @brief Get default swap-chain descriptor with pOutputWindowHandle.
   /// Format will be R8G8B8A8_UNORM.

@@ -14,6 +14,7 @@
 #include <Graphics/MD3D11Resources.h>
 #include <APlatformBase.h>
 #include <HelperMacro.h>
+#include <d3dcompiler.h>
 
 MD3D11Resources::THashMap<DD3DResourceDevice>         MD3D11Resources::mDevices; 
 MD3D11Resources::THashMap<IComOwner<ID3D11Buffer>> MD3D11Resources::mBuffers;
@@ -24,6 +25,8 @@ MD3D11Resources::THashMap<IComOwner<ID3D11RasterizerState>> MD3D11Resources::mRa
 MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilState>> MD3D11Resources::mDepthStencilStates;
 MD3D11Resources::THashMap<IComOwner<ID3D11BlendState>> MD3D11Resources::mBlendStates;
 MD3D11Resources::THashMap<IComOwner<ID3D11Texture2D>> MD3D11Resources::mTexture2Ds;
+MD3D11Resources::THashMap<IComOwner<ID3DBlob>> MD3D11Resources::mBlobs;
+MD3D11Resources::THashMap<IComOwner<ID3D11Query>> MD3D11Resources::mQueries;
 
 //!
 //! Device
@@ -228,6 +231,14 @@ bool MD3D11Resources::HasRTV(const D11HandleRTV& handle) noexcept
   return TThis::mRTVs.find(handle.GetUuid()) != TThis::mRTVs.end();
 }
 
+IComBorrow<ID3D11RenderTargetView> MD3D11Resources::GetRTV(const D11HandleRTV& handle)
+{
+  assert(TThis::HasRTV(handle) == true);
+
+  auto& object = TThis::mRTVs.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
 bool MD3D11Resources::RemoveRTV(const D11HandleRTV& handle)
 {
   // Validation check.
@@ -273,6 +284,14 @@ bool MD3D11Resources::HasDSV(const D11HandleDSV& handle) noexcept
   return TThis::mDSVs.find(handle.GetUuid()) != TThis::mDSVs.end();
 }
 
+IComBorrow<ID3D11DepthStencilView> MD3D11Resources::GetDSV(const D11HandleDSV& handle)
+{
+  assert(TThis::HasDSV(handle) == true);
+
+  auto& object = TThis::mDSVs.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
 bool MD3D11Resources::RemoveDSV(const D11HandleDSV& handle)
 {
   // Validation check.
@@ -311,6 +330,15 @@ MD3D11Resources::CreateRasterState(const D11HandleDevice& hDevice, const D3D11_R
 bool MD3D11Resources::HasRasterState(const D11HandleRasterState& handle) noexcept
 {
   return TThis::mRasterStates.find(handle.GetUuid()) != TThis::mRasterStates.end();
+}
+
+IComBorrow<ID3D11RasterizerState> 
+MD3D11Resources::GetRasterState(const D11HandleRasterState& handle)
+{
+  assert(TThis::HasRasterState(handle) == true);
+
+  auto& object = TThis::mRasterStates.at(handle.GetUuid());
+  return object.GetBorrow(); 
 }
 
 bool MD3D11Resources::RemoveRasterState(const D11HandleRasterState& handle)
@@ -354,6 +382,15 @@ bool MD3D11Resources::HasDepthStencilState(const D11HandleDepthStencilState& han
   return TThis::mDepthStencilStates.find(handle.GetUuid()) != TThis::mDepthStencilStates.end();
 }
 
+IComBorrow<ID3D11DepthStencilState> 
+MD3D11Resources::GetDepthStencilState(const D11HandleDepthStencilState& handle)
+{
+  assert(TThis::HasDepthStencilState(handle) == true);
+
+  auto& object = TThis::mDepthStencilStates.at(handle.GetUuid());
+  return object.GetBorrow(); 
+}
+
 bool MD3D11Resources::RemoveDepthStencilState(const D11HandleDepthStencilState& handle)
 {
   // Validation check.
@@ -392,6 +429,15 @@ MD3D11Resources::CreateBlendState(const D11HandleDevice& hDevice, const D3D11_BL
 bool MD3D11Resources::HasBlendState(const D11HandleBlendState& handle) noexcept
 {
   return TThis::mBlendStates.find(handle.GetUuid()) != TThis::mBlendStates.end();
+}
+
+IComBorrow<ID3D11BlendState> 
+MD3D11Resources::GetBlendState(const D11HandleBlendState& handle)
+{
+  assert(TThis::HasBlendState(handle) == true);
+
+  auto& object = TThis::mBlendStates.at(handle.GetUuid());
+  return object.GetBorrow(); 
 }
 
 bool MD3D11Resources::RemoveBlendState(const D11HandleBlendState& handle)
@@ -480,7 +526,7 @@ MD3D11Resources::CreateBuffer(
 
   auto device = TThis::GetDevice(hDevice);
 
-  // Create ID3D11Texture2D Resource.
+  // Create ID3D11Buffer Resource.
   ID3D11Buffer* pBuffer = nullptr;
   if (pInitBuffer != nullptr)
   {
@@ -524,5 +570,116 @@ bool MD3D11Resources::RemoveBuffer(const D11HandleBuffer& handle)
   if (TThis::HasBuffer(handle) == false) { return false; }
 
   TThis::mBuffers.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Blob
+//!
+
+std::optional<D11HandleBlob>
+MD3D11Resources::CreateBlob(const D11HandleDevice& hDevice, const std::size_t byteSize)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  auto device = TThis::GetDevice(hDevice);
+  
+  // Create ID3D11Blob Resource.
+  ID3DBlob* pBlob = nullptr;
+  HR(D3DCreateBlob(byteSize, &pBlob));
+
+  // If blob is null, just return nullopt.
+  if (pBlob == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mBlobs.try_emplace(::dy::math::DUuid{true}, pBlob);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid}; 
+}
+
+std::optional<D11HandleBlob>
+MD3D11Resources::InsertRawBlob(ID3DBlob*& pRawBlob)
+{
+  // Validation check.
+  if (pRawBlob == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mBlobs.try_emplace(::dy::math::DUuid{true}, pRawBlob);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  pRawBlob = nullptr;
+  return {uuid}; 
+}
+
+bool MD3D11Resources::HasBlob(const D11HandleBlob& handle)
+{
+  return TThis::mBlobs.find(handle.GetUuid()) != TThis::mBlobs.end();
+}
+
+IComBorrow<ID3DBlob> MD3D11Resources::GetBlob(const D11HandleBlob& handle)
+{
+  assert(TThis::HasBlob(handle) == true);
+
+  auto& object = TThis::mBlobs.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
+bool MD3D11Resources::RemoveBlob(const D11HandleBlob& handle)
+{
+  // Validation check.
+  if (TThis::HasBlob(handle) == false) { return false; }
+
+  TThis::mBlobs.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Query
+//!
+
+std::optional<D11HandleQuery>
+MD3D11Resources::CreateQuery(const D11HandleDevice& hDevice, const D3D11_QUERY_DESC& desc)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  auto device = TThis::GetDevice(hDevice);
+
+  // Create ID3D11Query Resource.
+  ID3D11Query* pQuery = nullptr;
+  HR(device->CreateQuery(&desc, &pQuery));
+
+  // If pTexture2D is null, just return nullopt.
+  if (pQuery == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mQueries.try_emplace(::dy::math::DUuid{true}, pQuery);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid}; 
+}
+
+bool MD3D11Resources::HasQuery(const D11HandleQuery& handle)
+{
+  return TThis::mQueries.find(handle.GetUuid()) != TThis::mQueries.end();
+}
+
+IComBorrow<ID3D11Query> MD3D11Resources::GetQuery(const D11HandleQuery& handle)
+{
+  assert(TThis::HasQuery(handle) == true);
+
+  auto& object = TThis::mQueries.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
+bool MD3D11Resources::RemoveQuery(const D11HandleQuery& handle)
+{
+  // Validation check.
+  if (TThis::HasQuery(handle) == false) { return false; }
+
+  TThis::mQueries.erase(handle.GetUuid());
   return true;
 }

@@ -146,7 +146,7 @@ public:
   /// That can be checkable for using D11HandleDSV::IsValid() and MD3D11Resources::HasDSV().
   /// @param handle Valid DSV handle.
   /// @return Return borrow type of actual D3D11 DSV resource.
-  static IComBorrow<ID3D11RenderTargetView> GetDSV(const D11HandleDSV& handle);
+  static IComBorrow<ID3D11DepthStencilView> GetDSV(const D11HandleDSV& handle);
 
   /// @brief Remove DSV resource with handle.
   /// @param handle Valid DSV handle.
@@ -204,7 +204,7 @@ public:
   /// and MD3D11Resources::HasDepthStencilState(). 
   /// @param handle Valid Depth-Stencil State handle.
   /// @return Return borrow type of actual D3D11 Depth-Stencil State resource.
-  static IComBorrow<ID3D11RasterizerState> GetDepthStencilState(const D11HandleDepthStencilState& handle);
+  static IComBorrow<ID3D11DepthStencilState> GetDepthStencilState(const D11HandleDepthStencilState& handle);
 
   /// @brief Remove Depth-Stencil State resource with handle.
   /// @param handle Valid Depth-Stencil State handle.
@@ -234,7 +234,7 @@ public:
   /// and MD3D11Resources::HasBlendState(). 
   /// @param handle Valid Blend State handle.
   /// @return Return borrow type of actual D3D11 Blend State resource.
-  static IComBorrow<ID3D11RasterizerState> GetBlendState(const D11HandleBlendState& handle);
+  static IComBorrow<ID3D11BlendState> GetBlendState(const D11HandleBlendState& handle);
 
   /// @brief Remove Blend State resource with handle.
   /// @param handle Valid Blend State handle.
@@ -303,6 +303,101 @@ public:
   /// @return If find, return true. If not find, return false.
   static bool RemoveBuffer(const D11HandleBuffer& handle);
 
+  //!
+  //! Blob
+  //!
+
+  /// @brief Create Blob of given valid device and optional buffer pointer.
+  /// @param hDevice Valid device handle.
+  /// @param byteSize Byte size of blob.
+  /// @return If successful, retrun handle of Blob resource.
+  [[nodiscard]] static std::optional<D11HandleBlob>
+  CreateBlob(const D11HandleDevice& hDevice, const std::size_t byteSize);
+
+  /// @brief Move raw blob (valid) into resource manager.
+  /// If successful, pRawBlob will be nullptr, but reference count of blob is not changed.
+  /// @param pRawBlob Raw blob pointer. blob must be valid to be succeeded.
+  /// @return If successful, retrun handle of Blob resource.
+  [[nodiscard]] static std::optional<D11HandleBlob>
+  InsertRawBlob(ID3DBlob*& pRawBlob);
+
+  /// @brief Check Blob resource is valid and in container.
+  /// @param handle Valid Blob handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasBlob(const D11HandleBlob& handle);
+
+  /// @brief Get borrow type of Blob resource safely.
+  /// This function does not check whether handle is valid or not and Blob resource is exist or not.
+  /// That can be checkable for using D11HandleBlob::IsValid() and MD3D11Resources::HasBlob().
+  /// @param handle Valid Blob handle.
+  /// @return Return borrow type of actual D3D11 Blob resource.
+  static IComBorrow<ID3DBlob> GetBlob(const D11HandleBlob& handle);
+
+  /// @brief Remove Blob resource with handle.
+  /// @param handle Valid Blob handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveBlob(const D11HandleBlob& handle);
+
+  //!
+  //! Vertex Shader
+  //!
+
+  /// @brief Create Vertex Shader of given valid device and optional buffer pointer.
+  /// @param hDevice Valid device handle.
+  /// @param desc Descriptor of D3D11 VertexShader.
+  /// @param pInitVertexShader Optional initial buffer ptr. This
+  /// must be valid when Vertex Shader would be IMMUTABLE.
+  /// @return If successful, retrun handle of VertexShader resource.
+  [[nodiscard]] static std::optional<D11HandleVS>
+  CreateVertexShader(
+    const D11HandleDevice& hDevice, const D3D11_BUFFER_DESC& desc, 
+    const void* pInitVertexShader = nullptr);
+
+  /// @brief Check Vertex Shader resource is valid and in container.
+  /// @param handle Valid Vertex Shader handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasVertexShader(const D11HandleVS& handle);
+
+  /// @brief Get borrow type of Vertex Shader resource safely.
+  /// This function does not check whether handle is valid or not and Vertex Shader resource is exist or not.
+  /// That can be checkable for using D11HandleVS::IsValid() and MD3D11Resources::HasVertexShader().
+  /// @param handle Valid Vertex Shader handle.
+  /// @return Return borrow type of actual D3D11 Vertex Shader resource.
+  static IComBorrow<ID3D11VertexShader> GetVertexShader(const D11HandleVS& handle);
+
+  /// @brief Remove Vertex Shader resource with handle.
+  /// @param handle Valid Vertex Shader handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveVertexShader(const D11HandleVS& handle);
+
+  //!
+  //! Query
+  //!
+
+  /// @brief Create Query of given valid device and optional buffer pointer.
+  /// @param hDevice Valid device handle.
+  /// @param desc Descriptor of D3D11 Query.
+  /// @return If successful, retrun handle of Query resource.
+  [[nodiscard]] static std::optional<D11HandleQuery>
+  CreateQuery(const D11HandleDevice& hDevice, const D3D11_QUERY_DESC& desc); 
+
+  /// @brief Check Query resource is valid and in container.
+  /// @param handle Valid Query handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasQuery(const D11HandleQuery& handle);
+
+  /// @brief Get borrow type of Query resource safely.
+  /// This function does not check whether handle is valid or not and Query resource is exist or not.
+  /// That can be checkable for using D11HandleQuery::IsValid() and MD3D11Resources::HasQuery().
+  /// @param handle Valid Query handle.
+  /// @return Return borrow type of actual D3D11 Query resource.
+  static IComBorrow<ID3D11Query> GetQuery(const D11HandleQuery& handle);
+
+  /// @brief Remove Query resource with handle.
+  /// @param handle Valid Query handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveQuery(const D11HandleQuery& handle);
+
 private:
   template <typename TValue>
   using THashMap = std::unordered_map<::dy::math::DUuid, TValue>;
@@ -327,6 +422,12 @@ private:
   static THashMap<IComOwner<ID3D11Texture2D>> mTexture2Ds;
   /// @brief Buffer Resource Container.
   static THashMap<IComOwner<ID3D11Buffer>> mBuffers;
-  /// @brief Vertex-shader Resource Container.
+  /// @brief Vertex-Shader Resource Container.
   //static THashMap<IComOwner<ID3D11VertexShader>> 
+  /// @brief Pixel-Shader Resource Container.
+
+  /// @brief
+  static THashMap<IComOwner<ID3DBlob>> mBlobs;
+  /// @brief Query Resource Container.
+  static THashMap<IComOwner<ID3D11Query>> mQueries;
 };

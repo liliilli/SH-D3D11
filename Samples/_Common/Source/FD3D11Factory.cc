@@ -18,6 +18,7 @@
 #include <d3dcompiler.h>
 
 #include <StringUtil/XUtility.h>
+#include <Graphics/MD3D11Resources.h>
 #include <APlatformBase.h>
 #include <HelperMacro.h>
 
@@ -152,6 +153,96 @@ FD3D11Factory::CompileShaderFromFile(
 
   ReleaseCOM(pErrorBlob);
   return hr;
+}
+
+std::optional<D11HandleBlob> FD3D11Factory::CompileShaderFromFile2(
+  dy::APlatformBase& platform,
+  const std::filesystem::path& filePath, 
+  const std::string& entryPointFunc, 
+  const std::string& shaderModel,
+  HRESULT* outResult)
+{
+  DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+  // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+  // Setting this flag improves the shader debugging experience, but still allows 
+  // the shaders to be optimized and to run exactly the way they will run in 
+  // the release configuration of this program.
+  dwShaderFlags |= D3DCOMPILE_DEBUG;
+  // Disable optimizations to further improve shader debugging
+  dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+  // Check file is exist.
+  if (std::filesystem::exists(filePath) == false)
+  {
+    const auto absolutePath = std::filesystem::absolute(filePath);
+    platform.GetDebugManager().OnAssertionFailed(
+      absolutePath.string().c_str(),
+      __FUNCTION__, __FILE__, __LINE__
+    );
+
+    if (outResult != nullptr) { *outResult = E_FAIL; }
+    return std::nullopt;
+  }
+  
+  // Create file descriptor.
+  FILE* fdFile = fopen(filePath.string().c_str(), "r");
+  if (fdFile == nullptr) 
+  { 
+    platform.GetDebugManager().OnAssertionFailed(
+      "Failed to read shader file.", __FUNCTION__, __FILE__, __LINE__
+    );
+
+    if (outResult != nullptr) { *outResult = E_FAIL; }
+    return std::nullopt;
+  }
+
+  // Read file buffer into fdBuffer.
+  fseek(fdFile, 0, SEEK_END);
+  const auto fdLength = ftell(fdFile);
+  fseek(fdFile, 0, SEEK_SET);
+
+  std::vector<char> fdBuffer(fdLength, 0);
+  fread(fdBuffer.data(), sizeof(char), fdLength, fdFile);
+  assert(feof(fdFile) != 0);
+  // Close file descriptor.
+  fclose(fdFile);
+
+  // D3DCompileFromFile.
+  // https://docs.microsoft.com/en-us/windows/desktop/api/d3dcompiler/nf-d3dcompiler-d3dcompilefromfile
+  // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3dcompiler/nf-d3dcompiler-d3dcompile2
+  ID3DBlob* pBlob = nullptr;
+  ID3DBlob* pErrorBlob = nullptr;
+  HRESULT hr = D3DCompile2(
+    fdBuffer.data(), fdBuffer.size(),
+    nullptr, nullptr, nullptr,
+    entryPointFunc.c_str(), shaderModel.c_str(),
+    dwShaderFlags, 0,
+    0, nullptr, 0,
+    &pBlob, &pErrorBlob
+  );
+
+  // Check error.
+  D11HandleBlob resultBlob = nullptr;
+  if (FAILED(hr))
+  {
+    if (pErrorBlob != nullptr)
+    {
+      OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+    }
+
+    ReleaseCOM(pBlob);
+    ReleaseCOM(pErrorBlob);
+    if (outResult != nullptr) { *outResult = E_FAIL; }
+    return std::nullopt;
+  }
+  else
+  {
+    resultBlob = *MD3D11Resources::InsertRawBlob(pBlob);
+    ReleaseCOM(pErrorBlob);
+    return resultBlob;
+  }
 }
 
 DXGI_SWAP_CHAIN_DESC FD3D11Factory::GetDefaultSwapChainDesc(
