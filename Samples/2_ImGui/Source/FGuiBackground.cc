@@ -14,7 +14,7 @@
 #include <FGuiBackground.h>
 
 #include <imgui.h>
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 
 FGuiBackground::FGuiBackground(DModelBackground& model)
 {

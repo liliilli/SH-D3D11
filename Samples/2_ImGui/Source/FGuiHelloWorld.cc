@@ -14,7 +14,7 @@
 #include <FGuiHelloWorld.h>
 
 #include <imgui.h>
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 
 FGuiHelloWorld::FGuiHelloWorld()
 {

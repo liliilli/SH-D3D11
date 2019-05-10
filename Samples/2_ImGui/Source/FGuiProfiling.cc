@@ -14,7 +14,7 @@
 #include <FGuiProfiling.h>
 
 #include <imgui.h>
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 #include <XPlatform.h>
 
 FGuiProfiling::FGuiProfiling()

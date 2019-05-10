@@ -30,7 +30,7 @@
 #include <ComWrapper/IComOwner.h>
 #include <ComWrapper/IComBorrow.h>
 #include <FD3D11Factory.h>
-#include <MTimeChecker.h>
+#include <Profiling/MTimeChecker.h>
 #include <MGuiManager.h>
 
 #include <StringUtil/XUtility.h>
@@ -41,6 +41,7 @@
 #include <FWindowsPlatform.h>
 #include <PLowInputMousePos.h>
 #include <XPlatform.h>
+#include <Graphics/MD3D11Resources.h>
 
 // Win32 message handler
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -95,254 +96,151 @@ int WINAPI WinMain(
   platform = std::make_unique<dy::FWindowsPlatform>();
   platform->InitPlatform();
   platform->CreateConsoleWindow();
-  auto optRes = CreateMainWindow("D3D11 0_HelloWorld", 1280, 720);
+  auto optRes = CreateMainWindow("D3D11 2_ImGui", 1280, 720);
   assert(optRes.has_value() == true);
 
   const auto& checker = MTimeChecker::Get("CreateMainWindow");
   LOG("[%s] : %.4lf second.\n", "CreateMainWindow", checker.GetRecent().count());
 
-  // Crate D3D11 Device & Context
-  auto optDeviceContext = FD3D11Factory::CreateD3D11Device(*platform);
-  assert(optDeviceContext.has_value() == true);
-
-  auto mD3DDevice           = optDeviceContext.value().first.GetBorrow();
-  auto mD3DImmediateContext = optDeviceContext.value().second.GetBorrow();
-
   // Get width and height of main window client region.
   const auto width  = platform->GetWindowWidth(*optRes);
   const auto height = platform->GetWindowHeight(*optRes);
-
-  // Describe Swap chain.
-  // https://bell0bytes.eu/the-swap-chain/
-  DXGI_SWAP_CHAIN_DESC sd;
-  {
-    // Describe frame-buffer format.
-    sd.BufferDesc.Width   = width;
-    sd.BufferDesc.Height  = height;
-    sd.BufferDesc.RefreshRate.Numerator   = 60; // Want 60 FPS
-    sd.BufferDesc.RefreshRate.Denominator = 1;// When Numerator is not 1 or 0, Denominator must be 1.
-    sd.BufferDesc.Format  = DXGI_FORMAT_R8G8B8A8_UNORM;
-    sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED; 
-    sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-
-    sd.SampleDesc.Count   = 1;
-    sd.SampleDesc.Quality = 0;
-
-    // Describe overall properties.
-    sd.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.BufferCount  = 1; // The count of `back buffer`.
-    sd.OutputWindow = static_cast<HWND>(platform->_GetHandleOf(*optRes)); // HWND to display.
-    sd.Windowed     = true;
-    sd.SwapEffect   = DXGI_SWAP_EFFECT_DISCARD; // Discard swapped old buffer.
-    sd.Flags        = 0; 
-  }
-
-  // Create swap chain.
-  IComOwner<IDXGISwapChain> mD3DSwapChain = nullptr;
-  {
-    // To call creating swap-chain function from DXGIFactory,
-    // we must get DXGI device, adapter, and etc... using querying.
-    IComOwner<IDXGIDevice> dxgiDevice = nullptr;
-    HR(mD3DDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice));
-
-    IComOwner<IDXGIAdapter> dxgiAdapter = nullptr;
-    HR(dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter));
-
-    IComOwner<IDXGIFactory> dxgiFactory = nullptr;
-    HR(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
-
-    // Create swap chain.
-    HR(dxgiFactory->CreateSwapChain(&mD3DDevice.Get(), &sd, mD3DSwapChain.GetAddressOf()));
-    HR(dxgiFactory->MakeWindowAssociation(
-      static_cast<HWND>(platform->_GetHandleOf(*optRes)),
-      DXGI_MWA_NO_WINDOW_CHANGES));
-  }
-
-  // Create render target view (RTV).
-  IComOwner<ID3D11RenderTargetView> mRenderTargetView = nullptr;
-  {
-    IComOwner<ID3D11Texture2D> mBackBufferTexture = nullptr; 
-    // This function increase internal COM instance reference counting.
-    mD3DSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&mBackBufferTexture);
-    mD3DDevice->CreateRenderTargetView(mBackBufferTexture.GetPtr(), nullptr, mRenderTargetView.GetAddressOf());
-  }
+  HWND mainWindowHandle = static_cast<HWND>(platform->_GetHandleOf(*optRes));
   
-  // Descript Depth/Stencil Buffer and View descriptors.
-  // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_texture2d_desc
-  D3D11_TEXTURE2D_DESC mDepthStencilDesc;
+  const auto optDefaults = FD3D11Factory::CreateDefaultFrameBuffer(*platform, *optRes);
+  assert(optDefaults.has_value() == true);
+  const auto& defaults = *optDefaults;
+
   {
-    // Depth/Stencil Render buffer (texture) descript.
-    mDepthStencilDesc.Width = width;
-    mDepthStencilDesc.Height = height;
-    mDepthStencilDesc.MipLevels = 1;
-    mDepthStencilDesc.ArraySize = 1;
-    mDepthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // Depth 24, Stencil 8.
+    auto bDevice = MD3D11Resources::GetDevice(defaults.mDevice);
+    auto d3dDc   = MD3D11Resources::GetDeviceContext(defaults.mDevice);
 
-    mDepthStencilDesc.SampleDesc.Count = 1;
-    mDepthStencilDesc.SampleDesc.Quality = 0;
-
-    mDepthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-    mDepthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    mDepthStencilDesc.CPUAccessFlags = 0; 
-    mDepthStencilDesc.MiscFlags = 0;
-  }
-
-  // Create Depth/Stencil View (DSV)
-  IComOwner<ID3D11Texture2D> mDepthStencilBuffer = nullptr;
-  IComOwner<ID3D11DepthStencilView> mDepthStencilView = nullptr;
-
-  // Second parameter of CreateTexture2D is a pointer to initial data to fill the texture with.
-  // We do not specify additional DESC to DSV, leave it inherits properties of Depth/Stencil Texture.
-  HR(mD3DDevice->CreateTexture2D(&mDepthStencilDesc, nullptr, mDepthStencilBuffer.GetAddressOf()));
-  HR(mD3DDevice->CreateDepthStencilView(mDepthStencilBuffer.GetPtr(), nullptr, mDepthStencilView.GetAddressOf()));
-  mD3DImmediateContext->OMSetRenderTargets(1, mRenderTargetView.GetAddressOf(), mDepthStencilView.GetPtr());
-
-  // Set Viewport
-  D3D11_VIEWPORT vp;
-  vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;
-  vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
-  vp.Width    = static_cast<float>(width);
-  vp.Height   = static_cast<float>(height);
-  mD3DImmediateContext->RSSetViewports(1, &vp);
-
-  // Set raster state (RS)
-  IComOwner<ID3D11RasterizerState> ownRasterState = nullptr;
-  {
-    D3D11_RASTERIZER_DESC rasterDesc;
-    rasterDesc.FillMode = D3D11_FILL_SOLID;
-    rasterDesc.CullMode = D3D11_CULL_BACK;
-    rasterDesc.FrontCounterClockwise = true;
-    rasterDesc.DepthBias = INT(0);
-    rasterDesc.DepthBiasClamp = FLOAT(0);
-    rasterDesc.SlopeScaledDepthBias = 0;
-    rasterDesc.DepthClipEnable = true;
-    rasterDesc.ScissorEnable = false;
-    rasterDesc.MultisampleEnable = false;
-    rasterDesc.AntialiasedLineEnable = false;
-
-    HR(mD3DDevice->CreateRasterizerState(&rasterDesc, ownRasterState.GetAddressOf()));
-  }
-  mD3DImmediateContext->RSSetState(ownRasterState.GetPtr());
-
-  // Set rect state.
-  std::array<D3D11_RECT, 1> ownRectState =
-  {
-    D3D11_RECT
-    {0, 0, 1280, 720}
-  };
-  mD3DImmediateContext->RSSetScissorRects(1, ownRectState.data());
-
-  // Set depth stencil state
-  IComOwner<ID3D11DepthStencilState> ownDepthStencilState = nullptr;
-  {
-    D3D11_DEPTH_STENCIL_DESC dssd = {};
-    dssd.DepthEnable    = FALSE;
-    dssd.DepthFunc      = D3D11_COMPARISON_LESS;
-    dssd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-    dssd.StencilEnable  = FALSE;
-    dssd.StencilReadMask  = 0xff;
-    dssd.StencilWriteMask = 0xff;
-
-    HR(mD3DDevice->CreateDepthStencilState(&dssd, ownDepthStencilState.GetAddressOf()));
-  }
-  mD3DImmediateContext->OMSetDepthStencilState(ownDepthStencilState.GetPtr(), 0x00);
-
-  // Set blend state
-  IComOwner<ID3D11BlendState> ownBlendState = nullptr;
-  {
-    D3D11_BLEND_DESC blendDesc = {};
+    // 1. Set RTV and DSV
     {
-      D3D11_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
-      rtBlendDesc.BlendEnable   = TRUE;
-      rtBlendDesc.BlendOp       = D3D11_BLEND_OP_ADD;
-      rtBlendDesc.BlendOpAlpha  = D3D11_BLEND_OP_ADD;
-      rtBlendDesc.SrcBlend      = D3D11_BLEND_SRC_ALPHA;
-      rtBlendDesc.DestBlend     = D3D11_BLEND_INV_SRC_ALPHA;
-      rtBlendDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
-      rtBlendDesc.DestBlendAlpha= D3D11_BLEND_ZERO;
-      rtBlendDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL; 
-      blendDesc.RenderTarget[0] = rtBlendDesc; 
-    }
-    blendDesc.AlphaToCoverageEnable = false;
-    blendDesc.IndependentBlendEnable = false;
+      auto bRTV     = MD3D11Resources::GetRTV(defaults.mRTV);
+      auto bDSV     = MD3D11Resources::GetDSV(defaults.mDSV);
+      auto* pRTV    = bRTV.GetPtr();
 
-    HR(mD3DDevice->CreateBlendState(&blendDesc, ownBlendState.GetAddressOf()));
+      d3dDc->OMSetRenderTargets(1, &pRTV, bDSV.GetPtr());
+    }
+
+    // 2. Set Viewport
+    {
+      D3D11_VIEWPORT vp;
+      vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;
+      vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
+      vp.Width    = static_cast<float>(width);
+      vp.Height   = static_cast<float>(height);
+      d3dDc->RSSetViewports(1, &vp);
+    }
+
+    // 3. Set Render, Rect, Deptn-Stencil, Blend states
+    {
+      // A. Set raster state (RS)
+      auto bRS = MD3D11Resources::GetRasterState(defaults.mRasterState);
+      d3dDc->RSSetState(bRS.GetPtr());
+
+      // B. Set rect state.
+      std::array<D3D11_RECT, 1> ownRectState = { D3D11_RECT {0, 0, 1280, 720} };
+      d3dDc->RSSetScissorRects(1, ownRectState.data());
+
+      // C. Set depth stencil state
+      auto bDSS = MD3D11Resources::GetDepthStencilState(defaults.mDepthStencilState);
+      d3dDc->OMSetDepthStencilState(bDSS.GetPtr(), 0x00);
+
+      // D. Set blend state
+      auto bBS = MD3D11Resources::GetBlendState(defaults.mBlendState);
+      const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
+      d3dDc->OMSetBlendState(bBS.GetPtr(), blendFactor, 0xFFFFFFFF);
+    }
   }
-  const FLOAT blendFactor[4] = {0, 0, 0, 0}; 
-  mD3DImmediateContext->OMSetBlendState(ownBlendState.GetPtr(), blendFactor, 0xFFFFFFFF);
 
   // Make timestamp queries (disjoint and start-end queries)
   // https://docs.microsoft.com/ko-kr/windows/desktop/api/d3d11/nf-d3d11-id3d11device-createquery
-  IComOwner<ID3D11Query> ownDisjointQuery       = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), true);
-  IComOwner<ID3D11Query> ownGpuStartFrameQuery  = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), false);
-  IComOwner<ID3D11Query> ownGpuEndFrameQuery    = *FD3D11Factory::CreateTimestampQuery(mD3DDevice.Get(), false);
+  IComOwner<ID3D11Query> ownDisjointQuery       = nullptr;
+  IComOwner<ID3D11Query> ownGpuStartFrameQuery  = nullptr; 
+  IComOwner<ID3D11Query> ownGpuEndFrameQuery    = nullptr;
+  {
+    auto bDevice = MD3D11Resources::GetDevice(defaults.mDevice);
+    auto d3dDc   = MD3D11Resources::GetDeviceContext(defaults.mDevice);
 
-  // Setup Dear ImGui context
-  MGuiManager::Initialize(
-    [&]()
-    {
-      ImGui_ImplWin32_Init(platform->_GetHandleOf(*optRes));
-      ImGui_ImplDX11_Init(mD3DDevice, mD3DImmediateContext);
-      platform->SetPreProcessCallback(ImGui_ImplWin32_WndProcHandler);
-    },
-    [&]()
-    {
-      ImGui_ImplDX11_Shutdown();
-      ImGui_ImplWin32_Shutdown();
-      ImGui::DestroyContext();
-    }
-  );
-  MGuiManager::SetRenderCallbacks(
-    [] {
-      // Start the Dear ImGui frame
-      ImGui_ImplDX11_NewFrame();
-      ImGui_ImplWin32_NewFrame();
-      ImGui::NewFrame();
-    },
-    [] {
-      ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-    }
-  );
-  MGuiManager::CreateGui<FGuiHelloWorld>("Hello");
-  //MGuiManager::CreateGui<FGuiBackground>("Background");
-  MGuiManager::CreateGui<FGuiMainMenu>("MainMenu");
+    ownDisjointQuery       = *FD3D11Factory::CreateTimestampQuery(bDevice.GetRef(), true);
+    ownGpuStartFrameQuery  = *FD3D11Factory::CreateTimestampQuery(bDevice.GetRef(), false);
+    ownGpuEndFrameQuery    = *FD3D11Factory::CreateTimestampQuery(bDevice.GetRef(), false);
 
+    // Setup Dear ImGui context
+    MGuiManager::Initialize(
+      [&]()
+      {
+        ImGui_ImplWin32_Init(platform->_GetHandleOf(*optRes));
+        ImGui_ImplDX11_Init(bDevice.GetPtr(), d3dDc.GetPtr());
+        platform->SetPreProcessCallback(ImGui_ImplWin32_WndProcHandler);
+      },
+      [&]()
+      {
+        ImGui_ImplDX11_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+      }
+    );
+    MGuiManager::SetRenderCallbacks(
+      [] {
+        // Start the Dear ImGui frame
+        ImGui_ImplDX11_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+      },
+      [] {
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+      }
+    );
+    MGuiManager::CreateGui<FGuiHelloWorld>("Hello");
+    MGuiManager::CreateGui<FGuiMainMenu>("MainMenu");
+  }
+ 
   // Loop
-	while (platform->CanShutdown() == false)
-	{
-    auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
-    platform->PollEvents();
-  
-    MGuiManager::Update();
-    auto* background = MGuiManager::GetGui("Background");
-    static dy::math::DVector3<dy::math::TReal> bgCol = {0};
-    if (background != nullptr)
+  {
+    auto bDevice    = MD3D11Resources::GetDevice(defaults.mDevice);
+    auto bSwapCHain = MD3D11Resources::GetSwapChain(defaults.mSwapChain);
+    auto d3dDc      = MD3D11Resources::GetDeviceContext(defaults.mDevice);
+
+    auto bRTV       = MD3D11Resources::GetRTV(defaults.mRTV);
+    auto bDSV       = MD3D11Resources::GetDSV(defaults.mDSV);
+
+    while (platform->CanShutdown() == false)
     {
-      auto& bgModel = static_cast<DModelBackground&>(background->GetModel());
-      bgCol = bgModel.mBackgroundColor; 
+      TIME_CHECK_CPU("CpuFrame");
+      platform->PollEvents();
+      MGuiManager::Update();
+
+      auto* background = MGuiManager::GetGui("Background");
+      static dy::math::DVector3<dy::math::TReal> bgCol = {0};
+      if (background != nullptr)
+      {
+        auto& bgModel = static_cast<DModelBackground&>(background->GetModel());
+        bgCol = bgModel.mBackgroundColor; 
+      }
+
+      TIME_CHECK_D3D11_STALL(gpuTime, "GpuFrame", *ownDisjointQuery.GetPtr(), d3dDc.GetRef());
+      {
+        TIME_CHECK_FRAGMENT(gpuTime, "Overall", *ownGpuStartFrameQuery.GetPtr(), *ownGpuEndFrameQuery.GetPtr());
+
+        d3dDc->ClearRenderTargetView(bRTV.GetPtr(), std::array<FLOAT, 4>{bgCol.X, bgCol.Y, bgCol.Z, 1}.data());
+        d3dDc->ClearDepthStencilView(bDSV.GetPtr(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+        MGuiManager::Render();
+        // Present the back buffer to the screen.
+        HR(bSwapCHain->Present(0, 0));
+      }
     }
-
-    auto gpuTime = MTimeChecker::CheckGpuD3D11Time("GpuFrame", *ownDisjointQuery, mD3DImmediateContext.Get(), 
-      false);
-    {
-      auto fragment = 
-        gpuTime.CheckFragment("Overall", *ownGpuStartFrameQuery, *ownGpuEndFrameQuery);
-
-      mD3DImmediateContext->ClearRenderTargetView(
-        mRenderTargetView.GetPtr(), 
-        std::array<FLOAT, 4>{bgCol.X, bgCol.Y, bgCol.Z, 1}.data());
-      mD3DImmediateContext->ClearDepthStencilView(mDepthStencilView.GetPtr(), 
-        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-        1.0f,
-        0);
-
-      MGuiManager::Render();
-      // Present the back buffer to the screen.
-      HR(mD3DSwapChain->Present(0, 0));
-    }
-	}
+  }
 
   MGuiManager::Shutdown();
+  {
+    const auto flag = MD3D11Resources::RemoveDefaultFrameBufferResouce(*optDefaults);
+    assert(flag == true);
+  }
+
   platform->RemoveAllWindow();
   platform->RemoveConsoleWindow();
   platform->ReleasePlatform();
