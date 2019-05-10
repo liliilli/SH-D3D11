@@ -38,7 +38,7 @@ public:
   CreateD3D11Device(dy::APlatformBase& platform);
 
   /// @brief Create default frame buffer. This function should be called only once.
-  [[deprecated]] static std::optional<D11DefaultHandles>
+  static std::optional<D11DefaultHandles>
   CreateDefaultFrameBuffer(dy::APlatformBase& platform, dy::DWindowHandle& hWnd);
 
   /// @brief Try compile shader from file.

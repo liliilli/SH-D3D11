@@ -761,7 +761,9 @@ MD3D11Resources::CreateInputLayout(
   
   // Create ID3D11InputLayout Resource.
   ID3D11InputLayout* pIL = nullptr;
-  HR(device->CreateInputLayout(pLayoutList, layoutSize, blob->GetBufferPointer(), blob->GetBufferSize(), &pIL));
+  HR(device->CreateInputLayout(
+    pLayoutList, static_cast<UINT>(layoutSize), 
+    blob->GetBufferPointer(), blob->GetBufferSize(), &pIL));
 
   // If result is null, just return nullopt.
   if (pIL == nullptr) { return std::nullopt; }
