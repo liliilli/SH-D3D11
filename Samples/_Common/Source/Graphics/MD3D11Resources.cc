@@ -17,16 +17,19 @@
 #include <d3dcompiler.h>
 
 MD3D11Resources::THashMap<DD3DResourceDevice>         MD3D11Resources::mDevices; 
-MD3D11Resources::THashMap<IComOwner<ID3D11Buffer>> MD3D11Resources::mBuffers;
 MD3D11Resources::THashMap<IComOwner<IDXGISwapChain>>  MD3D11Resources::mSwapChains;
-MD3D11Resources::THashMap<IComOwner<ID3D11RenderTargetView>> MD3D11Resources::mRTVs;
-MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilView>> MD3D11Resources::mDSVs;
-MD3D11Resources::THashMap<IComOwner<ID3D11RasterizerState>> MD3D11Resources::mRasterStates;
+MD3D11Resources::THashMap<IComOwner<ID3D11RenderTargetView>>  MD3D11Resources::mRTVs;
+MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilView>>  MD3D11Resources::mDSVs;
+MD3D11Resources::THashMap<IComOwner<ID3D11RasterizerState>>   MD3D11Resources::mRasterStates;
 MD3D11Resources::THashMap<IComOwner<ID3D11DepthStencilState>> MD3D11Resources::mDepthStencilStates;
-MD3D11Resources::THashMap<IComOwner<ID3D11BlendState>> MD3D11Resources::mBlendStates;
+MD3D11Resources::THashMap<IComOwner<ID3D11BlendState>>        MD3D11Resources::mBlendStates;
+MD3D11Resources::THashMap<IComOwner<ID3D11VertexShader>>  MD3D11Resources::mVSs;
+MD3D11Resources::THashMap<IComOwner<ID3D11PixelShader>>   MD3D11Resources::mPSs;
+MD3D11Resources::THashMap<IComOwner<ID3D11InputLayout>>   MD3D11Resources::mInputLayouts;
+MD3D11Resources::THashMap<IComOwner<ID3D11Buffer>>    MD3D11Resources::mBuffers;
 MD3D11Resources::THashMap<IComOwner<ID3D11Texture2D>> MD3D11Resources::mTexture2Ds;
-MD3D11Resources::THashMap<IComOwner<ID3DBlob>> MD3D11Resources::mBlobs;
-MD3D11Resources::THashMap<IComOwner<ID3D11Query>> MD3D11Resources::mQueries;
+MD3D11Resources::THashMap<IComOwner<ID3DBlob>>        MD3D11Resources::mBlobs;
+MD3D11Resources::THashMap<IComOwner<ID3D11Query>>     MD3D11Resources::mQueries;
 
 //!
 //! Device
@@ -633,6 +636,161 @@ bool MD3D11Resources::RemoveBlob(const D11HandleBlob& handle)
   if (TThis::HasBlob(handle) == false) { return false; }
 
   TThis::mBlobs.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Vertex Shader
+//!
+
+std::optional<D11HandleVS> 
+MD3D11Resources::CreateVertexShader(const D11HandleDevice& hDevice, const D11HandleBlob& hBlob)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  if (TThis::HasBlob(hBlob) == false) { return std::nullopt; }
+
+  auto device = TThis::GetDevice(hDevice);
+  auto blob   = TThis::GetBlob(hBlob);
+  
+  // Create ID3D11VertexShader Resource.
+  ID3D11VertexShader* pVS = nullptr;
+  HR(device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &pVS));
+
+  // If result is null, just return nullopt.
+  if (pVS == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mVSs.try_emplace(::dy::math::DUuid{true}, pVS);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid}; 
+}
+
+bool MD3D11Resources::HasVertexShader(const D11HandleVS& handle)
+{
+  return TThis::mVSs.find(handle.GetUuid()) != TThis::mVSs.end();
+}
+
+IComBorrow<ID3D11VertexShader> MD3D11Resources::GetVertexShader(const D11HandleVS& handle)
+{
+  assert(TThis::HasVertexShader(handle) == true);
+
+  auto& object = TThis::mVSs.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
+bool MD3D11Resources::RemoveVertexShader(const D11HandleVS& handle)
+{
+  // Validation check.
+  if (TThis::HasVertexShader(handle) == false) { return false; }
+
+  TThis::mVSs.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Pixel Shader
+//!
+
+std::optional<D11HandlePS> 
+MD3D11Resources::CreatePixelShader(const D11HandleDevice& hDevice, const D11HandleBlob& hBlob)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  if (TThis::HasBlob(hBlob) == false) { return std::nullopt; }
+
+  auto device = TThis::GetDevice(hDevice);
+  auto blob   = TThis::GetBlob(hBlob);
+  
+  // Create ID3D11PixelShader Resource.
+  ID3D11PixelShader* pPS = nullptr;
+  HR(device->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &pPS));
+
+  // If result is null, just return nullopt.
+  if (pPS == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mPSs.try_emplace(::dy::math::DUuid{true}, pPS);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid}; 
+}
+
+bool MD3D11Resources::HasPixelShader(const D11HandlePS& handle)
+{
+  return TThis::mPSs.find(handle.GetUuid()) != TThis::mPSs.end();
+}
+
+IComBorrow<ID3D11PixelShader> MD3D11Resources::GetPixelShader(const D11HandlePS& handle)
+{
+  assert(TThis::HasPixelShader(handle) == true);
+
+  auto& object = TThis::mPSs.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
+bool MD3D11Resources::RemovePixelShader(const D11HandlePS& handle)
+{
+  // Validation check.
+  if (TThis::HasPixelShader(handle) == false) { return false; }
+
+  TThis::mPSs.erase(handle.GetUuid());
+  return true;
+}
+
+//!
+//! Input layout
+//!
+
+std::optional<D11HandleInputLayout>
+MD3D11Resources::CreateInputLayout(
+  const D11HandleDevice& hDevice, const D11HandleBlob& hBlob,
+  const D3D11_INPUT_ELEMENT_DESC* pLayoutList, std::size_t layoutSize)
+{
+  // Validation check.
+  if (TThis::HasDevice(hDevice) == false) { return std::nullopt; }
+  if (TThis::HasBlob(hBlob) == false) { return std::nullopt; }
+
+  auto device = TThis::GetDevice(hDevice);
+  auto blob   = TThis::GetBlob(hBlob);
+  
+  // Create ID3D11InputLayout Resource.
+  ID3D11InputLayout* pIL = nullptr;
+  HR(device->CreateInputLayout(pLayoutList, layoutSize, blob->GetBufferPointer(), blob->GetBufferSize(), &pIL));
+
+  // If result is null, just return nullopt.
+  if (pIL == nullptr) { return std::nullopt; }
+
+  // Insert.
+  auto [it, isSucceeded] = TThis::mInputLayouts.try_emplace(::dy::math::DUuid{true}, pIL);
+  assert(isSucceeded == true);
+  const auto& [uuid, pOwner] = *it;
+
+  return {uuid};   
+}
+
+bool MD3D11Resources::HasInputLayout(const D11HandleInputLayout& handle)
+{
+  return TThis::mInputLayouts.find(handle.GetUuid()) != TThis::mInputLayouts.end();
+}
+
+IComBorrow<ID3D11InputLayout> MD3D11Resources::GetInputLayout(const D11HandleInputLayout& handle)
+{
+  assert(TThis::HasInputLayout(handle) == true);
+
+  auto& object = TThis::mInputLayouts.at(handle.GetUuid());
+  return object.GetBorrow();  
+}
+
+bool MD3D11Resources::RemoveInputLayout(const D11HandleInputLayout& handle)
+{
+  // Validation check.
+  if (TThis::HasInputLayout(handle) == false) { return false; }
+
+  TThis::mInputLayouts.erase(handle.GetUuid());
   return true;
 }
 

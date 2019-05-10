@@ -344,14 +344,11 @@ public:
 
   /// @brief Create Vertex Shader of given valid device and optional buffer pointer.
   /// @param hDevice Valid device handle.
-  /// @param desc Descriptor of D3D11 VertexShader.
-  /// @param pInitVertexShader Optional initial buffer ptr. This
+  /// @param hBlob Valid vertex shader IL blob handle.
   /// must be valid when Vertex Shader would be IMMUTABLE.
   /// @return If successful, retrun handle of VertexShader resource.
   [[nodiscard]] static std::optional<D11HandleVS>
-  CreateVertexShader(
-    const D11HandleDevice& hDevice, const D3D11_BUFFER_DESC& desc, 
-    const void* pInitVertexShader = nullptr);
+  CreateVertexShader(const D11HandleDevice& hDevice, const D11HandleBlob& hBlob); 
 
   /// @brief Check Vertex Shader resource is valid and in container.
   /// @param handle Valid Vertex Shader handle.
@@ -369,6 +366,68 @@ public:
   /// @param handle Valid Vertex Shader handle.
   /// @return If find, return true. If not find, return false.
   static bool RemoveVertexShader(const D11HandleVS& handle);
+
+  //!
+  //! Pixel Shader
+  //!
+
+  /// @brief Create Pixel Shader of given valid device and optional buffer pointer.
+  /// @param hDevice Valid device handle.
+  /// @param hBlob Valid vertex shader IL blob handle.
+  /// must be valid when Pixel Shader would be IMMUTABLE.
+  /// @return If successful, retrun handle of PixelShader resource.
+  [[nodiscard]] static std::optional<D11HandlePS>
+  CreatePixelShader(const D11HandleDevice& hDevice, const D11HandleBlob& hBlob); 
+
+  /// @brief Check Pixel Shader resource is valid and in container.
+  /// @param handle Valid Pixel Shader handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasPixelShader(const D11HandlePS& handle);
+
+  /// @brief Get borrow type of Pixel Shader resource safely.
+  /// This function does not check whether handle is valid or not and Pixel Shader resource is exist or not.
+  /// That can be checkable for using D11HandleVS::IsValid() and MD3D11Resources::HasPixelShader().
+  /// @param handle Valid Pixel Shader handle.
+  /// @return Return borrow type of actual D3D11 Pixel Shader resource.
+  static IComBorrow<ID3D11PixelShader> GetPixelShader(const D11HandlePS& handle);
+
+  /// @brief Remove Pixel Shader resource with handle.
+  /// @param handle Valid Pixel Shader handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemovePixelShader(const D11HandlePS& handle);
+
+  //!
+  //! Input layout
+  //!
+
+  /// @brief Create INput Layout of given valid device and optional buffer pointer.
+  /// @param hDevice Valid device handle.
+  /// @param hBlob Valid Shader mapping blob handle.
+  /// @param pLayoutList Shader input layout mapping list pointer
+  /// @param layoutSize The length of shader input layout list.
+  /// must be valid when Vertex Shader would be IMMUTABLE.
+  /// @return If successful, retrun handle of Input Layout resource.
+  [[nodiscard]] static std::optional<D11HandleInputLayout>
+  CreateInputLayout(
+    const D11HandleDevice& hDevice, const D11HandleBlob& hBlob,
+    const D3D11_INPUT_ELEMENT_DESC* pLayoutList, std::size_t layoutSize); 
+
+  /// @brief Check Input Layout resource is valid and in container.
+  /// @param handle Valid Input Layout handle.
+  /// @return If find, return true. Otherwise, return false.
+  [[nodiscard]] static bool HasInputLayout(const D11HandleInputLayout& handle);
+
+  /// @brief Get borrow type of Input Layout resource safely.
+  /// This function does not check whether handle is valid or not and Input Layout resource is exist or not.
+  /// That can be checkable for using D11HandleInputLayout::IsValid() and MD3D11Resources::HasInputLayout().
+  /// @param handle Valid Input Layout handle.
+  /// @return Return borrow type of actual D3D11 Input Layout resource.
+  static IComBorrow<ID3D11InputLayout> GetInputLayout(const D11HandleInputLayout& handle);
+
+  /// @brief Remove Input Layout resource with handle.
+  /// @param handle Valid Input Layout handle.
+  /// @return If find, return true. If not find, return false.
+  static bool RemoveInputLayout(const D11HandleInputLayout& handle);
 
   //!
   //! Query
@@ -423,10 +482,12 @@ private:
   /// @brief Buffer Resource Container.
   static THashMap<IComOwner<ID3D11Buffer>> mBuffers;
   /// @brief Vertex-Shader Resource Container.
-  //static THashMap<IComOwner<ID3D11VertexShader>> 
+  static THashMap<IComOwner<ID3D11VertexShader>> mVSs;
   /// @brief Pixel-Shader Resource Container.
-
-  /// @brief
+  static THashMap<IComOwner<ID3D11PixelShader>> mPSs;
+  /// @brief Input Layout Resource Container.
+  static THashMap<IComOwner<ID3D11InputLayout>> mInputLayouts;
+  /// @brief Blob (arbitary length, buffer) Resource Container.
   static THashMap<IComOwner<ID3DBlob>> mBlobs;
   /// @brief Query Resource Container.
   static THashMap<IComOwner<ID3D11Query>> mQueries;
