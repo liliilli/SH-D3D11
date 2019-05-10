@@ -877,3 +877,54 @@ bool MD3D11Resources::RemoveQuery(const D11HandleQuery& handle)
   TThis::mQueries.erase(handle.GetUuid());
   return true;
 }
+
+bool MD3D11Resources::RemoveDefaultFrameBufferResouce(const D11DefaultHandles& handles)
+{
+  // Validation Check
+  if (MD3D11Resources::HasBlendState(handles.mBlendState) == false
+  &&  MD3D11Resources::HasDevice(handles.mDevice) == false
+  &&  MD3D11Resources::HasDepthStencilState(handles.mDepthStencilState) == false
+  &&  MD3D11Resources::HasDSV(handles.mDSV) == false
+  &&  MD3D11Resources::HasTexture2D(handles.mDSTexture2D) == false
+  &&  MD3D11Resources::HasRasterState(handles.mRasterState) == false
+  &&  MD3D11Resources::HasRTV(handles.mRTV) == false
+  &&  MD3D11Resources::HasSwapChain(handles.mSwapChain) == false)
+  {
+    return false;
+  }
+
+  // Try Remove
+  {
+    const auto flag = MD3D11Resources::RemoveBlendState(handles.mBlendState);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveDepthStencilState(handles.mDepthStencilState);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveRasterState(handles.mRasterState);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveDSV(handles.mDSV);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveTexture2D(handles.mDSTexture2D);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveRTV(handles.mRTV);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveSwapChain(handles.mSwapChain);
+    assert(flag == true);
+  }
+  {
+    const auto flag = MD3D11Resources::RemoveDevice(handles.mDevice);
+    assert(flag == true);
+  }
+  return true;
+}

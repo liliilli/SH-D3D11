@@ -22,6 +22,8 @@
 #include <Resource/DD3D11Handle.h>
 #include <Resource/E11SimpleQueryType.h>
 
+class D11DefaultHandles;
+
 namespace dy
 {
 struct DWindowHandle;
@@ -464,6 +466,14 @@ public:
   /// @param handle Valid Query handle.
   /// @return If find, return true. If not find, return false.
   static bool RemoveQuery(const D11HandleQuery& handle);
+
+  //!
+  //! Micellanous
+  //!
+
+  /// @brief Remove resources with default handles.
+  /// All resource that be specified by member handles must be valid, or do nothing return false.
+  static bool RemoveDefaultFrameBufferResouce(const D11DefaultHandles& handles);
 
 private:
   template <typename TValue>

@@ -19,6 +19,7 @@
 
 #include <ComWrapper/IComOwner.h>
 #include <Resource/DD3D11Handle.h>
+#include <Resource/D11DefaultHandles.h>
 
 namespace dy
 {
@@ -35,6 +36,10 @@ public:
   [[deprecated]]
   static std::optional<std::pair<IComOwner<ID3D11Device>, IComOwner<ID3D11DeviceContext>>>
   CreateD3D11Device(dy::APlatformBase& platform);
+
+  /// @brief Create default frame buffer. This function should be called only once.
+  [[deprecated]] static std::optional<D11DefaultHandles>
+  CreateDefaultFrameBuffer(dy::APlatformBase& platform, dy::DWindowHandle& hWnd);
 
   /// @brief Try compile shader from file.
   [[deprecated]] static HRESULT CompileShaderFromFile(
@@ -54,10 +59,7 @@ public:
 
   /// @brief Get default swap-chain descriptor with pOutputWindowHandle.
   /// Format will be R8G8B8A8_UNORM.
-  static DXGI_SWAP_CHAIN_DESC GetDefaultSwapChainDesc(
-    unsigned width,
-    unsigned height,
-    HWND pOutputWindowHandle);
+  static DXGI_SWAP_CHAIN_DESC GetDefaultSwapChainDesc(unsigned width, unsigned height, HWND pOutputWindowHandle);
 
   /// @brief Get default depth stencil texture2D descriptor with (width, height).
   /// FORMAT will be D24_UNORM_S8_UINT.

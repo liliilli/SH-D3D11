@@ -72,6 +72,91 @@ FD3D11Factory::CreateD3D11Device(dy::APlatformBase& platform)
   return std::pair{std::move(mD3DDevice), std::move(mD3DImmediateContext)};
 }
 
+std::optional<D11DefaultHandles> FD3D11Factory::CreateDefaultFrameBuffer(
+  dy::APlatformBase& platform, dy::DWindowHandle& hWnd)
+{
+  const auto width  = platform.GetWindowWidth(hWnd);
+  const auto height = platform.GetWindowHeight(hWnd);
+  HWND mainWindowHandle = static_cast<HWND>(platform._GetHandleOf(hWnd));
+
+  auto deviceHandle = MD3D11Resources::CreateD3D11DefaultDevice(platform);
+  assert(MD3D11Resources::HasDevice(*deviceHandle) == true);
+
+  // Create swap chain.
+  D11SwapChainHandle swapChainHandle = nullptr;
+  {
+    // Describe Swap chain.
+    // https://bell0bytes.eu/the-swap-chain/
+    DXGI_SWAP_CHAIN_DESC desc = FD3D11Factory::GetDefaultSwapChainDesc(width, height, mainWindowHandle);
+    swapChainHandle = *MD3D11Resources::CreateSwapChain(*deviceHandle, mainWindowHandle, desc);
+    assert(MD3D11Resources::HasSwapChain(swapChainHandle) == true);
+  }
+
+  // Create default RTV from swap-chain.
+  D11HandleRTV defaultRtv = nullptr;
+  {
+    defaultRtv = *MD3D11Resources::CreateRTVFromSwapChain(*deviceHandle, swapChainHandle);
+    assert(MD3D11Resources::HasRTV(defaultRtv) == true);
+  }
+
+  // Create depth-stencil texture and view.
+  // Second parameter of CreateTexture2D is a pointer to initial data to fill the texture with.
+  // We do not specify additional DESC to DSV, leave it inherits properties of Depth/Stencil Texture.
+  D11HandleTexture2D depthStencilTexture = nullptr;
+  {
+    // Descript Depth/Stencil Buffer and View descriptors.
+    // https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ns-d3d11-d3d11_texture2d_desc
+    depthStencilTexture = *MD3D11Resources::CreateTexture2D(
+      *deviceHandle,
+      FD3D11Factory::GetDefaultDepthStencilDesc(width, height));
+    assert(MD3D11Resources::HasTexture2D(depthStencilTexture) == true);
+  }
+  D11HandleDSV defaultDsv = nullptr;
+  {
+    defaultDsv = *MD3D11Resources::CreateDSV(*deviceHandle, depthStencilTexture);
+    assert(MD3D11Resources::HasDSV(defaultDsv) == true);
+  }
+  
+  // Create default rasterizer-state.
+  D11HandleRasterState defaultRasterState = nullptr;
+  {
+    defaultRasterState = *MD3D11Resources::CreateRasterState(
+      *deviceHandle, 
+      FD3D11Factory::GetDefaultRasterStateDesc());
+    assert(MD3D11Resources::HasRasterState(defaultRasterState) == true);
+  }
+  
+  // Create default depth-stencil state.
+  D11HandleDepthStencilState handleDepthStencilState = nullptr;
+  {
+    handleDepthStencilState = *MD3D11Resources::CreateDepthStencilState(
+      *deviceHandle,
+      FD3D11Factory::GetDefaultDepthStencilStateDesc());
+    assert(MD3D11Resources::HasDepthStencilState(handleDepthStencilState) == true);
+  }
+  
+  // Create default blend state.
+  D11HandleBlendState handleBlendState = nullptr;
+  {
+    handleBlendState = *MD3D11Resources::CreateBlendState(
+      *deviceHandle,
+      FD3D11Factory::GetDefaultBlendStateDesc());
+    assert(MD3D11Resources::HasBlendState(handleBlendState) == true);
+  }
+
+  D11DefaultHandles result;
+  result.mWHwnd       = mainWindowHandle;
+  result.mDevice      = *deviceHandle;
+  result.mSwapChain   = swapChainHandle;
+  result.mRTV         = defaultRtv;
+  result.mDSTexture2D = depthStencilTexture;
+  result.mDSV         = defaultDsv;
+  result.mRasterState = defaultRasterState;
+  result.mDepthStencilState = handleDepthStencilState;
+  result.mBlendState  = handleBlendState;
+  return result;
+}
+
 HRESULT 
 FD3D11Factory::CompileShaderFromFile(
   dy::APlatformBase& platform,
