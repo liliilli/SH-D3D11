@@ -37,7 +37,7 @@ public:
   void Render() override final;
 
 private:
-  DVector3<TReal> mPosition = {1, 0, 1};
+  DVector3<TReal> mPosition = {1, 0, 10};
   DVector3<TReal> mUp       = {0, 1, 0};
   DVector3<TReal> mLookAt   = {0, 0, 0};
 

@@ -22,18 +22,33 @@
 namespace 
 {
 
-inline std::array<DVertex, 3> vertices =
+inline std::array<DVertex, 8> vertices =
 { 
+  ///  .7---4.
+  /// 3_______0
+  /// |.6...5.|
+  /// 2_______1
   DVertex
-  { {-1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
-  { {+1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
-  { {+0.0f, +1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f} },
+  { {+1.0f, +1.0f, +1.0f}, {0.0f, 1.0f, 1.0f, 1.0f} }, 
+  { {+1.0f, -1.0f, +1.0f}, {1.0f, 0.0f, 1.0f, 1.0f} },
+  { {-1.0f, -1.0f, +1.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
+  { {-1.0f, +1.0f, +1.0f}, {1.0f, 0.0f, 0.0f, 1.0f} },
+
+  { {+1.0f, +1.0f, -1.0f}, {0.0f, 0.0f, 1.0f, 1.0f} },
+  { {+1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 0.0f, 1.0f} },
+  { {-1.0f, -1.0f, -1.0f}, {1.0f, 0.0f, 1.0f, 1.0f} },
+  { {-1.0f, +1.0f, -1.0f}, {1.0f, 1.0f, 1.0f, 1.0f} },
 };
 
 // Create Index Buffer.
-inline std::array<unsigned, 3> indices =
+inline std::array<unsigned, 36> indices =
 { // 1        2        3        4
-  0, 1, 2, 
+  0, 3, 1, 3, 2, 1,
+  4, 0, 5, 0, 1, 5,
+  7, 4, 6, 4, 5, 6,
+  3, 7, 2, 7, 6, 2,
+  4, 7, 0, 7, 3, 0,
+  1, 2, 5, 2, 6, 5,
 };
 
 }
@@ -123,5 +138,5 @@ void FObjBox::Render()
 
   (*this->mDc)->IASetVertexBuffers(0, 1, &pVBuffer, &stride, &offset);
   (*this->mDc)->IASetIndexBuffer((*mIBuffer).GetPtr(), DXGI_FORMAT_R32_UINT, 0);
-  (*this->mDc)->DrawIndexed(3, 0, 0);
+  (*this->mDc)->DrawIndexed(36, 0, 0);
 }

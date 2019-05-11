@@ -36,8 +36,8 @@ public:
   void Render() override final;
 
 private:
-  ::dy::math::DVector3<::dy::math::TReal> mPosition   = {0, 0, -1};
-  ::dy::math::DVector3<::dy::math::TReal> mDegRotate  = {0, -45, 0};
+  ::dy::math::DVector3<::dy::math::TReal> mPosition   = {0, 0, 0};
+  ::dy::math::DVector3<::dy::math::TReal> mDegRotate  = {45, -45, -45};
   ::dy::math::DVector3<::dy::math::TReal> mScale      = {1, 1, 1};
 
   D11HandleBuffer hVBuffer  = nullptr;

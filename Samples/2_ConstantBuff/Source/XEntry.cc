@@ -39,6 +39,7 @@
 #include <XLocalCommon.h>
 #include <Graphics/MD3D11Resources.h>
 #include <FObjTriangle.h>
+#include <FObjBox.h>
 #include <FObjCamera.h>
 #include <Math/Utility/XGraphicsMath.h>
 
@@ -247,8 +248,8 @@ int WINAPI WinMain(
 
     auto bSwapCHain   = MD3D11Resources::GetSwapChain(defaults.mSwapChain);
 
-    DObjTriangle paramTriangle = {&defaults, &hCbObject};
-    FObjTriangle triangle{};  triangle.Initialize(&paramTriangle);
+    DObjBox paramTriangle = {&defaults, &hCbObject};
+    FObjBox triangle{}; triangle.Initialize(&paramTriangle);
 
     DObjCamera paramCamera = {&defaults, &hCbViewProj};
     FObjCamera camera{};      camera.Initialize(&paramCamera);
