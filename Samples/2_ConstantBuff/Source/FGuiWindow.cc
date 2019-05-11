@@ -58,11 +58,6 @@ void FGuiWindow::Render()
     ImGui::Text("GPU Average : %.3f ms/50 frame", 
       gpuFrame["Overall"].GetAverage().count() * 1000.0f);
   }
-  if (gpuFrame.HasFragment("CBuffer") == true)
-  {
-    ImGui::Text("GPU Constant Buffer Update : %.3f ms/50 frame",
-      gpuFrame["CBuffer"].GetAverage().count() * 1000.0f);
-  }
   if (gpuFrame.HasFragment("Draw") == true)
   {
     ImGui::Text("GPU Draw : %.3f ms/50 frame",

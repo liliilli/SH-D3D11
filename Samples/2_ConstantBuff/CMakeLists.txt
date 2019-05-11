@@ -32,6 +32,7 @@ set(SOURCE
 	"${SOURCE_DIRECTORY}/FGuiWindow.cc"
 	"${SOURCE_DIRECTORY}/FObjCamera.cc"
 	"${SOURCE_DIRECTORY}/FObjTriangle.cc"
+	"${SOURCE_DIRECTORY}/FObjBox.cc"
 	"${SOURCE_DIRECTORY}/XLocalCommon.cc"
 	"${SOURCE_DIRECTORY}/XPlatform.cc"
 )

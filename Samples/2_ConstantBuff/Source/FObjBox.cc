@@ -11,7 +11,7 @@
 /// SOFTWARE.
 ///
 
-#include <FObjTriangle.h>
+#include <FObjBox.h>
 #include <Graphics/MD3D11Resources.h>
 #include <Resource/D11DefaultHandles.h>
 #include <Math/Utility/XGraphicsMath.h>
@@ -38,9 +38,9 @@ inline std::array<unsigned, 3> indices =
 
 }
 
-void FObjTriangle::Initialize(void* pData)
+void FObjBox::Initialize(void* pData)
 {
-  const auto& param     = *static_cast<DObjTriangle*>(pData); 
+  const auto& param     = *static_cast<DObjBox*>(pData); 
   assert(param.mpData != nullptr);
   assert(param.mpCbObject != nullptr);
 
@@ -78,7 +78,7 @@ void FObjTriangle::Initialize(void* pData)
   }
 }
 
-void FObjTriangle::Release(void* pData)
+void FObjBox::Release(void* pData)
 {
   this->mVBuffer = std::nullopt;
   this->mIBuffer = std::nullopt;
@@ -93,7 +93,7 @@ void FObjTriangle::Release(void* pData)
   }
 }
 
-void FObjTriangle::Update(float delta)
+void FObjBox::Update(float delta)
 {
   if (MGuiManager::HasSharedModel("Window") == true)
   {
@@ -102,7 +102,7 @@ void FObjTriangle::Update(float delta)
   }
 }
 
-void FObjTriangle::Render()
+void FObjBox::Render()
 {
   assert(this->mCbObject.has_value() == true);
   assert(this->mDc.has_value() == true);

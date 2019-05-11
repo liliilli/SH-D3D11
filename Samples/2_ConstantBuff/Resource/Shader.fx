@@ -4,18 +4,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //--------------------------------------------------------------------------------------
 
-cbuffer cbScale : register(b0)
-{
-  float mScale;
-};
-
-cbuffer cbCamera : register(b1)
+cbuffer cbCamera : register(b0)
 {
   float4x4 mViewMat;
   float4x4 mProjMat;
 };
 
-cbuffer cbObject : register(b2)
+cbuffer cbObject : register(b1)
 {
   float4x4 mModelMat;
 };
@@ -41,7 +36,7 @@ VertexOut VS(VertexIn vin)
   vout.PosH = 
     mul(
       mul(
-        mul(float4(vin.Pos.xyz * mScale, 1.0f), mModelMat)
+        mul(float4(vin.Pos.xyz, 1.0f), mModelMat)
         , mViewMat)
       , mProjMat);
   vout.Color  = vin.Color;
