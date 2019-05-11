@@ -22,7 +22,10 @@ IComBorrow<TType>::IComBorrow(__IComOwner<TType>& comOwner)
 template <typename TType>
 IComBorrow<TType>::~IComBorrow()
 {
-  this->mPtrCom->mCounter.syncPop(*this);
+  if (this->mPtrCom != nullptr)
+  {
+    this->mPtrCom->mCounter.syncPop(*this);
+  }
 }
 
 template <typename TType>
