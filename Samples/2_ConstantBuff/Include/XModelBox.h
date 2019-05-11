@@ -12,31 +12,18 @@
 /// SOFTWARE.
 ///
 
-#include <Math/Type/Math/DMatrix4.h>
+#include <XBuffer.h>
 
-using namespace ::dy::math;
-
-/// @struct DCbScale
-/// @brief  Constant buffer 
-struct DCbScale final
-{
-  alignas(16) float mScale;
+inline const std::array<DVertex, 3> sBoxVertices =
+{ 
+  DVertex
+  { {-1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
+  { {+1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
+  { {+0.0f, +1.0f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f} },
 };
 
-/// @struct DCbObject
-/// @brief Constant Buffer
-struct DCbObject final
-{
-  DMatrix4<TReal> mModel;
+// Create Index Buffer.
+inline const std::array<unsigned, 3> sBoxIndices =
+{ // 1        2        3        4
+  0, 1, 2, 
 };
-
-/// @struct DCbViewProj
-/// @brief Constant Buffer
-struct DCbViewProj final
-{
-  DMatrix4<TReal> mView;
-  DMatrix4<TReal> mProj;
-};
-
-static_assert(sizeof(DCbScale) % 16 == 0);
-static_assert(sizeof(DCbViewProj) % 16 == 0);

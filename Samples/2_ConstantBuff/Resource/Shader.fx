@@ -4,22 +4,20 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //--------------------------------------------------------------------------------------
 
-#if 0
-cbuffer cbPerObject
-{
-  float4x4 mModelMatrix;
-};
-
-cbuffer cbCamera
-{
-  float4x4 mViewMatrix;
-  float4x4 mProjMatrix;
-};
-#endif
-
-cbuffer cbScale
+cbuffer cbScale : register(b0)
 {
   float mScale;
+};
+
+cbuffer cbCamera : register(b1)
+{
+  float4x4 mViewMat;
+  float4x4 mProjMat;
+};
+
+cbuffer cbObject : register(b2)
+{
+  float4x4 mModelMat;
 };
 
 struct VertexIn
@@ -40,7 +38,12 @@ struct VertexOut
 VertexOut VS(VertexIn vin)
 {
   VertexOut vout;
-  vout.PosH   = float4(vin.Pos.xyz * mScale, 1.0f);
+  vout.PosH = 
+    mul(
+      mul(
+        mul(float4(vin.Pos.xyz * mScale, 1.0f), mModelMat)
+        , mViewMat)
+      , mProjMat);
   vout.Color  = vin.Color;
 
   return vout;

@@ -28,7 +28,7 @@
 #include <FD3D11Factory.h>
 #include <Profiling/MTimeChecker.h>
 #include <MGuiManager.h>
-#include <XTriangle.h>
+#include <XModelTriangle.h>
 #include <XCBuffer.h>
 
 #include <StringUtil/XUtility.h>
@@ -39,6 +39,9 @@
 #include <XPlatform.h>
 #include <XLocalCommon.h>
 #include <Graphics/MD3D11Resources.h>
+#include <FObjTriangle.h>
+#include <FObjCamera.h>
+#include <Math/Utility/XGraphicsMath.h>
 
 int WINAPI WinMain(
   [[maybe_unused]] HINSTANCE hInstance, 
@@ -64,53 +67,53 @@ int WINAPI WinMain(
   //! D3D11 Setting up
   //!
 
-  const auto optDefaults = FD3D11Factory::CreateDefaultFrameBuffer(*platform, *optRes);
+  auto optDefaults = FD3D11Factory::CreateDefaultFrameBuffer(*platform, *optRes);
   assert(optDefaults.has_value() == true);
-  const auto& defaults = *optDefaults;
+  auto& defaults = *optDefaults;
 
   // Create vertex & indice buffers and constant buffers
-  D11HandleBuffer handleVertexBuffer = nullptr;
-  {
-    D3D11_BUFFER_DESC vbDesc = {};
-    vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    vbDesc.ByteWidth = sizeof(vertices);
-    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vbDesc.CPUAccessFlags = 0;
-    vbDesc.MiscFlags = 0;
-    vbDesc.StructureByteStride = 0;
-
-    handleVertexBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, vbDesc, vertices.data());
-    assert(MD3D11Resources::HasBuffer(handleVertexBuffer) == true);
-  }
-
-  D11HandleBuffer handleIndiceBuffer = nullptr;
-  {
-    D3D11_BUFFER_DESC ibDesc;
-    ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    ibDesc.ByteWidth = sizeof(indices);
-    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    ibDesc.CPUAccessFlags = 0;
-    ibDesc.MiscFlags = 0;
-    ibDesc.StructureByteStride = 0;
-
-    handleIndiceBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, ibDesc, indices.data());
-    assert(MD3D11Resources::HasBuffer(handleIndiceBuffer) == true);
-  }
-
   D11HandleBuffer handleConstantBuffer = nullptr;
   {
     D3D11_BUFFER_DESC desc;
     desc.Usage      = D3D11_USAGE_DEFAULT;
     desc.ByteWidth  = sizeof(DCbScale);
     desc.BindFlags  = D3D11_BIND_CONSTANT_BUFFER;
-    desc.CPUAccessFlags = 0;
-    desc.MiscFlags = 0;
-    desc.StructureByteStride = 0;
+    desc.CPUAccessFlags = 0; desc.MiscFlags = 0; desc.StructureByteStride = 0;
 
     DCbScale initScale; initScale.mScale = 0.5f;
 
     handleConstantBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, desc, &initScale);
     assert(MD3D11Resources::HasBuffer(handleConstantBuffer) == true);
+  }
+  D11HandleBuffer hCbObject = nullptr;
+  {
+    D3D11_BUFFER_DESC desc;
+    desc.Usage      = D3D11_USAGE_DEFAULT;
+    desc.ByteWidth  = sizeof(DCbObject);
+    desc.BindFlags  = D3D11_BIND_CONSTANT_BUFFER;
+    desc.CPUAccessFlags = 0; desc.MiscFlags = 0; desc.StructureByteStride = 0;
+
+    DCbObject init;
+    {
+      const auto rot = Rotate<TReal>(EGraphics::OpenGL, DMatrix4<TReal>::Identity(), {0, -45, 0}, true);
+      const auto mod = Translate<TReal>(EGraphics::OpenGL, rot, {0, 0, -1});
+      init.mModel = mod.Transpose();
+    }
+      
+    hCbObject = *MD3D11Resources::CreateBuffer(defaults.mDevice, desc, &init);
+    assert(MD3D11Resources::HasBuffer(hCbObject) == true);
+  }
+  D11HandleBuffer hCbViewProj = nullptr;
+  {
+    D3D11_BUFFER_DESC desc;
+    desc.Usage      = D3D11_USAGE_DEFAULT;
+    desc.ByteWidth  = sizeof(DCbViewProj);
+    desc.BindFlags  = D3D11_BIND_CONSTANT_BUFFER;
+    desc.CPUAccessFlags = 0; desc.MiscFlags = 0; desc.StructureByteStride = 0;
+
+    DCbViewProj init;
+    hCbViewProj = *MD3D11Resources::CreateBuffer(defaults.mDevice, desc, &init);
+    assert(MD3D11Resources::HasBuffer(hCbViewProj) == true);
   }
 
   //!
@@ -217,11 +220,14 @@ int WINAPI WinMain(
      
     // 4. Set topologies.
     {
-      auto vBuffer  = MD3D11Resources::GetBuffer(handleVertexBuffer);
-      auto iBuffer  = MD3D11Resources::GetBuffer(handleIndiceBuffer);
       auto cBuffer  = MD3D11Resources::GetBuffer(handleConstantBuffer);
-      auto* pVBuffer= vBuffer.GetPtr();
       auto* pCBuffer= cBuffer.GetPtr();
+
+      auto bCbViewProj    = MD3D11Resources::GetBuffer(hCbViewProj);
+      auto* pbCbViewProj  = bCbViewProj.GetPtr();
+
+      auto bCbObject      = MD3D11Resources::GetBuffer(hCbObject);
+      auto* pbCbObject    = bCbObject.GetPtr(); 
 
       d3dDc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -230,11 +236,9 @@ int WINAPI WinMain(
       d3dDc->IASetInputLayout(bIL.GetPtr());
 
       // 6. Set Vertex & Index & Constant Buffers
-      UINT stride = sizeof(DVertex);
-      UINT offset = 0;
-      d3dDc->IASetVertexBuffers(0, 1, &pVBuffer, &stride, &offset);
-      d3dDc->IASetIndexBuffer(iBuffer.GetPtr(), DXGI_FORMAT_R32_UINT, 0);
       d3dDc->VSSetConstantBuffers(0, 1, &pCBuffer);
+      d3dDc->VSSetConstantBuffers(1, 1, &pbCbViewProj);
+      d3dDc->VSSetConstantBuffers(2, 1, &pbCbObject);
     }
   }
  
@@ -271,14 +275,22 @@ int WINAPI WinMain(
     auto bSwapCHain   = MD3D11Resources::GetSwapChain(defaults.mSwapChain);
     auto cBuffer      = MD3D11Resources::GetBuffer(handleConstantBuffer);
 
+    DObjTriangle paramTriangle = {&defaults, &hCbObject};
+    FObjTriangle triangle{};  triangle.Initialize(&paramTriangle);
+
+    DObjCamera paramCamera = {&defaults, &hCbViewProj};
+    FObjCamera camera{};      camera.Initialize(&paramCamera);
+
     // Loop
     while (platform->CanShutdown() == false)
     {
       // Update Routine
       TIME_CHECK_CPU("CpuFrame");
-      //auto cpuTime = MTimeChecker::CheckCpuTime("CpuFrame");
       platform->PollEvents();
       MGuiManager::Update();
+
+      triangle.Update(0);
+      camera.Update(0);
 
       // Render Routine
       TIME_CHECK_D3D11_STALL(gpuTime, "GpuFrame", bDisjoint.GetRef(), d3dDc.GetRef());
@@ -300,17 +312,22 @@ int WINAPI WinMain(
         d3dDc->VSSetShader(bVS.GetPtr(), nullptr, 0);
         d3dDc->PSSetShader(bPS.GetPtr(), nullptr, 0);
 
+        // Render objects
         {
           TIME_CHECK_FRAGMENT(gpuTime, "Draw", bDrawStart.GetRef(), bDrawEnd.GetRef());
-          d3dDc->DrawIndexed(3, 0, 0);
+          triangle.Render();
+          camera.Render();
         }
 
+        // Render GUI items.
         MGuiManager::Render();
-
         // Present the back buffer to the screen.
-        HR(bSwapCHain->Present(1, 0));
+        HR(bSwapCHain->Present(0, 0));
       }
     }
+
+    camera.Release(nullptr);
+    triangle.Release(nullptr);
   }
 
   MGuiManager::Shutdown();
@@ -339,14 +356,6 @@ int WINAPI WinMain(
   }
   {
     const auto flag = MD3D11Resources::RemoveBuffer(handleConstantBuffer);
-    assert(flag == true);
-  }
-  {
-    const auto flag = MD3D11Resources::RemoveBuffer(handleIndiceBuffer);
-    assert(flag == true);
-  }
-  {
-    const auto flag = MD3D11Resources::RemoveBuffer(handleVertexBuffer);
     assert(flag == true);
   }
   {

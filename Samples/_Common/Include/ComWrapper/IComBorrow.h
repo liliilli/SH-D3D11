@@ -37,13 +37,26 @@ public:
     if (this == &borrow) { return *this; }
     if (this->mPtrCom == borrow.mPtrCom) { return *this; }
 
-    this->mPtrCom->mCounter.syncPop(*this);
+    if (this->mPtrCom != nullptr)
+    {
+      this->mPtrCom->mCounter.syncPop(*this);
+    }
     this->mPtrCom = borrow.mPtrCom;
     this->mPtrCom->mCounter.syncPush(*this);
     return *this;
   }
 
-  IComBorrow(IComBorrow&& borrow) noexcept = delete;
+  IComBorrow(IComBorrow&& borrow) noexcept
+    : mPtrCom{borrow.mPtrCom}
+  {
+    if (borrow.mPtrCom != nullptr) 
+    { 
+      borrow.mPtrCom->mCounter.syncPop(borrow);
+      borrow.mPtrCom = nullptr;
+      this->mPtrCom->mCounter.syncPush(*this);
+    }
+  }
+
   IComBorrow& operator=(IComBorrow&& borrow) noexcept = delete;
 
   ~IComBorrow();

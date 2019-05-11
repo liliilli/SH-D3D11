@@ -30,6 +30,8 @@ set(SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 set(SOURCE
 	"${SOURCE_DIRECTORY}/XEntry.cc"
 	"${SOURCE_DIRECTORY}/FGuiWindow.cc"
+	"${SOURCE_DIRECTORY}/FObjCamera.cc"
+	"${SOURCE_DIRECTORY}/FObjTriangle.cc"
 	"${SOURCE_DIRECTORY}/XLocalCommon.cc"
 	"${SOURCE_DIRECTORY}/XPlatform.cc"
 )
