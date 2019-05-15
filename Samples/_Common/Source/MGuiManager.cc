@@ -22,6 +22,7 @@ void(*MGuiManager::mPostRenderCallback)(void)  = nullptr;
 std::unordered_map<std::string, std::unique_ptr<IGuiFrame>> MGuiManager::mGuis;
 std::vector<std::unique_ptr<IGuiFrame>>                     MGuiManager::mRemovedGuis;
 std::unordered_map<std::string, std::unique_ptr<IGuiModel>> MGuiManager::mSharedModels;
+ImGuiStyle* MGuiManager::mpGuiStyle = nullptr;
 
 void MGuiManager::SetRenderCallbacks(
   void(*preRenderCallback)(void),
@@ -43,8 +44,13 @@ void MGuiManager::Initialize(
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
   // Setup Dear ImGui style
-  //ImGui::StyleColorsDark();
-  ImGui::StyleColorsClassic();
+  mpGuiStyle = &ImGui::GetStyle();
+  ImGui::StyleColorsDark(mpGuiStyle);
+
+  mpGuiStyle->FrameRounding = 0.0f;
+  mpGuiStyle->GrabRounding = 0.0f;
+  mpGuiStyle->WindowTitleAlign = ImVec2{ 0.5f, 0.5f };
+  mpGuiStyle->WindowRounding = 0.0f;
 
   // Set callback and call init function.
   mInitCallback = initFunc;

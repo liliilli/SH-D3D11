@@ -18,6 +18,8 @@
 #include <IGuiFrame.h>
 #include <IGuiModel.h>
 
+struct ImGuiStyle;
+
 /// @class MGuiManager
 /// @brief wrapped ImGui OOP management type.
 class MGuiManager final
@@ -93,5 +95,7 @@ private:
   static std::vector<std::unique_ptr<IGuiFrame>> mRemovedGuis;
   /// @brief
   static std::unordered_map<std::string, std::unique_ptr<IGuiModel>> mSharedModels;
+  /// @brief
+  static ImGuiStyle* mpGuiStyle;
 };
 #include <MGuiManager.inl>
