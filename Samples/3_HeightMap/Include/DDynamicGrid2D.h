@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <memory>
+#include <DGridYIterator.h>
 
 /// @class DDynamicGrid2D
 /// @tparam TType
@@ -32,6 +33,7 @@ public:
   using alloc_traits    = std::allocator_traits<TAllocator>;
   using pointer         = typename alloc_traits::pointer;
   using const_pointer   = typename alloc_traits::const_pointer;
+  using iterator        = DGridYIterator<value_type>;
 
   DDynamicGrid2D(size_type x, size_type y)
     : mGridX{x}, mGridY{y}
@@ -195,14 +197,30 @@ public:
     return *(mOwnerPtr + (y * mGridX) + x);
   }
 
+  /// @brief
   pointer Data() noexcept
   {
     return this->mOwnerPtr;
   }
 
+  /// @brief
   const_pointer Data() const noexcept
   {
     return this->mOwnerPtr;
+  }
+
+  //!
+  //! Iterators
+  //!
+
+  iterator begin() noexcept
+  {
+    return {this->mOwnerPtr, this->mGridY, this->mGridX, 0};
+  }
+
+  iterator end() noexcept
+  {
+    return {this->mOwnerPtr, this->mGridY, this->mGridX, this->mGridY};
   }
 
 private:

@@ -36,7 +36,7 @@ void FObjTerrain::Initialize(void* pData)
 
     D3D11_BUFFER_DESC vbDesc = {};
     vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    vbDesc.ByteWidth = sizeof(DVector3<TReal>) * buffer.GetRowSize() * buffer.GetColumnSize();
+    vbDesc.ByteWidth = UINT(sizeof(DVector3<TReal>) * buffer.GetRowSize() * buffer.GetColumnSize());
     vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     vbDesc.CPUAccessFlags = 0;
     vbDesc.MiscFlags = 0;
@@ -52,7 +52,7 @@ void FObjTerrain::Initialize(void* pData)
 
     D3D11_BUFFER_DESC ibDesc;
     ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    ibDesc.ByteWidth = buffer.size() * sizeof(TU32);
+    ibDesc.ByteWidth = UINT(buffer.size() * sizeof(TU32));
     ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
     ibDesc.CPUAccessFlags = 0;
     ibDesc.MiscFlags = 0;
@@ -109,5 +109,5 @@ void FObjTerrain::Render()
 
   (*this->mDc)->IASetVertexBuffers(0, 1, &pVBuffer, &stride, &offset);
   (*this->mDc)->IASetIndexBuffer((*mIBuffer).GetPtr(), DXGI_FORMAT_R32_UINT, 0);
-  (*this->mDc)->DrawIndexed(MRandomMap::TempGetIndiceBuffer().size(), 0, 0);
+  (*this->mDc)->DrawIndexed(UINT(MRandomMap::TempGetIndiceBuffer().size()), 0, 0);
 }

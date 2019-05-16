@@ -16,20 +16,11 @@
 #include <Math/Utility/XRandom.h>
 #include <Math/Utility/XLinearMath.h>
 #include <Expr/TZip.h>
-#include "../Include/MRandomMap.h"
 
 void MRandomMap::TempMake()
 {
   // Get random gradient value.
   DDynamicGrid2D<DVector2<TReal>> gradientMap = {9, 9};
-  for (auto y = 0; y < gradientMap.GetRowSize(); ++y)
-  {
-    for (auto x = 0; x < gradientMap.GetColumnSize(); ++x)
-    {
-      gradientMap.Set(x, y, RandomVector2Length<TReal>(1.0f));
-    }
-  }
-#if 0
   for (auto& row : gradientMap)
   {
     for (auto& item : row)
@@ -37,14 +28,13 @@ void MRandomMap::TempMake()
       item = RandomVector2Length<TReal>(1.0f);
     }
   }
-#endif
 
   // Get height value of center-point of each grid cell.
   // Make center-point map.
   DDynamicGrid2D<DVector2<TReal>> centerPointMap = {8, 8};
-  for (std::size_t y = 0, ySize = 8; y < ySize; ++y)
+  for (std::size_t y = 0, ySize = centerPointMap.GetRowSize(); y < ySize; ++y)
   {
-    for (std::size_t x = 0, xSize = 8; x < xSize; ++x)
+    for (std::size_t x = 0, xSize = centerPointMap.GetColumnSize(); x < xSize; ++x)
     {
       centerPointMap.Set(x, y, {x + 0.5f, y + 0.5f});
     }
@@ -58,9 +48,9 @@ void MRandomMap::TempMake()
   };
 
   // Calculate heights
-  for (std::size_t y = 0, ySize = 8; y < ySize; ++y)
+  for (std::size_t y = 0, ySize = mHeightMap2.GetRowSize(); y < ySize; ++y)
   {
-    for (std::size_t x = 0, xSize = 8; x < xSize; ++x)
+    for (std::size_t x = 0, xSize = mHeightMap2.GetColumnSize(); x < xSize; ++x)
     {
       // Get values 
       const auto& centerPoint = centerPointMap.Get(x, y);
@@ -82,9 +72,9 @@ void MRandomMap::TempMake()
   }
 
   // Set buffer with height-map.
-  for (std::size_t y = 0; y < 8; ++y)
+  for (std::size_t y = 0; y < mVertexBuffer2.GetRowSize(); ++y)
   {
-    for (std::size_t x = 0; x < 8; ++x)
+    for (std::size_t x = 0; x < mVertexBuffer2.GetColumnSize(); ++x)
     {
       mVertexBuffer2.Set(
         x, y, 
@@ -99,7 +89,7 @@ void MRandomMap::TempMake()
   {
     for (std::size_t x = 0; x < 7; ++x)
     {
-      const unsigned i = x + y * rowLen;
+      const unsigned i = (unsigned)(x + y * rowLen);
       mIndiceBuffer.emplace_back(i);
       mIndiceBuffer.emplace_back(i + rowLen);
       mIndiceBuffer.emplace_back(i + 1);
