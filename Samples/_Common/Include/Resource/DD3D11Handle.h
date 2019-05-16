@@ -29,7 +29,7 @@ public:
 
   [[nodiscard]] bool IsValid() const noexcept
   {
-    static const decltype(mUuid) noneUuid = {false};
+    static const ::dy::math::DUuid noneUuid = ::dy::math::DUuid{};
     return this->mUuid != noneUuid;
   }
 
