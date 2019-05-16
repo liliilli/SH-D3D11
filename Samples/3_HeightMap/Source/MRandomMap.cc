@@ -17,6 +17,36 @@
 #include <Math/Utility/XLinearMath.h>
 #include <Expr/TZip.h>
 
+namespace
+{
+
+std::vector<std::pair<DVector2<TI32>, DVector2<TReal>>>
+CalculateOffset(std::size_t fragmentNum)
+{
+  const TReal edgeOffset    = 1 / static_cast<TReal>(fragmentNum * 2);
+  const TReal centerOffset  = static_cast<TReal>(fragmentNum - 1) / fragmentNum;
+
+  std::vector<std::pair<DVector2<TI32>, DVector2<TReal>>> result = {};
+  TReal yPos = 0.0f;
+  for (decltype(fragmentNum) y = 0; y < fragmentNum; ++y)
+  {
+    if (y == 0) { yPos += edgeOffset; } else { yPos += centerOffset; }
+    TReal xPos = 0.0f;
+    for (decltype(fragmentNum) x = 0; x < fragmentNum; ++x)
+    {
+      if (x == 0) { xPos += edgeOffset; } else { xPos += centerOffset; }
+      result.emplace_back(
+        DVector2<TI32>{(TI32)x, (TI32)y}, 
+        DVector2<TReal>{xPos, yPos}
+      );
+    }
+  }
+
+  return result;
+}
+
+}
+
 void MRandomMap::TempMake()
 {
   // Get random gradient value.
@@ -31,15 +61,26 @@ void MRandomMap::TempMake()
 
   // Get height value of center-point of each grid cell.
   // Make center-point map.
-  DDynamicGrid2D<DVector2<TReal>> centerPointMap = {8, 8};
-  for (std::size_t y = 0, ySize = centerPointMap.GetRowSize(); y < ySize; ++y)
+  DDynamicGrid2D<DVector2<TReal>> centerPointMap = {8 * 2, 8 * 2};
   {
-    for (std::size_t x = 0, xSize = centerPointMap.GetColumnSize(); x < xSize; ++x)
+    const auto col = gradientMap.GetColumnSize() - 1;
+    const auto row = gradientMap.GetRowSize() - 1;
+    for (std::size_t y = 0; y < row; ++y)
     {
-      centerPointMap.Set(x, y, {x + 0.5f, y + 0.5f});
+      const auto iY = 2 * y;
+
+      for (std::size_t x = 0; x < col; ++x)
+      {
+        const auto iX = 2 * x;
+        const auto offsets = CalculateOffset(2);
+        for (const auto& [pos, offset] : offsets)
+        {
+          centerPointMap.Set(iX + pos.X, iY + pos.Y, DVector2<TI32>{TI32(x), TI32(y)} + offset);
+        }
+      }
     }
   }
-
+  
   // Get Height map from center-point map using linear interpolation.
   auto DotGridGradient = [&](const DVector2<TReal>& centerPoint, const DVector2<TI32>& index) -> TReal
   {
@@ -84,10 +125,10 @@ void MRandomMap::TempMake()
   }
 
   // Set indice buffer index.
-  const auto rowLen = 8;
-  for (std::size_t y = 0; y < 7; ++y)
+  const auto rowLen = 16;
+  for (std::size_t y = 0; y < 15; ++y)
   {
-    for (std::size_t x = 0; x < 7; ++x)
+    for (std::size_t x = 0; x < 15; ++x)
     {
       const unsigned i = (unsigned)(x + y * rowLen);
       mIndiceBuffer.emplace_back(i);
@@ -101,6 +142,6 @@ void MRandomMap::TempMake()
   }
 }
 
-DDynamicGrid2D<float> MRandomMap::mHeightMap2 = {8, 8};
-DDynamicGrid2D<DVector3<TReal>> MRandomMap::mVertexBuffer2 = {8, 8};
+DDynamicGrid2D<float> MRandomMap::mHeightMap2 = {8 * 2, 8 * 2};
+DDynamicGrid2D<DVector3<TReal>> MRandomMap::mVertexBuffer2 = {8 * 2, 8 * 2};
 std::vector<unsigned> MRandomMap::mIndiceBuffer;

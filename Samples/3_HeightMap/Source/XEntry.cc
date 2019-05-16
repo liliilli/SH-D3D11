@@ -262,8 +262,8 @@ int WINAPI WinMain(
       platform->PollEvents();
       MGuiManager::Update();
 
-      camera.Update(0);
-      terrain.Update(0);
+      camera.Update(0.016f);
+      terrain.Update(0.0f);
 
       // Render Routine
       TIME_CHECK_D3D11_STALL(gpuTime, "GpuFrame", bDisjoint.GetRef(), d3dDc.GetRef());

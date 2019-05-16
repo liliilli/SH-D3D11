@@ -84,8 +84,8 @@ void FObjTerrain::Update(float delta)
   if (MGuiManager::HasSharedModel("Window") == true)
   {
     auto& model = static_cast<DModelWindow&>(MGuiManager::GetSharedModel("Window"));
-    this->mScale = model.mScale;
   }
+  mDegRotate.Y += delta * 30;
 }
 
 void FObjTerrain::Render()

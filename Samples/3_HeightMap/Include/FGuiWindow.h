@@ -21,7 +21,6 @@ class DModelWindow final : public IGuiModel
 public:
   bool mDrawWireframe = false;
 
-  float mScale = 1.0f;
   float mCamera = 45.0f;
   float mDistance = 10.0f;
 
