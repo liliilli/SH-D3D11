@@ -56,7 +56,7 @@ public:
   DGridYIterator& operator=(const DGridYIterator&) = default;
 
   // lvalues of type It satisfy Swappable, [LegacyIterator]
-  void swap(DGridYIterator& other)
+  void swap(DGridYIterator& other) noexcept
   {
     std::swap(this->mRowIterators, other.mRowIterators);
     std::swap(this->mId, other.mId);
@@ -151,7 +151,7 @@ private:
 };
 
 template <typename TType>
-void swap(DGridYIterator<TType>& v1, DGridYIterator<TType>& v2)
+void swap(DGridYIterator<TType>& v1, DGridYIterator<TType>& v2) noexcept
 {
   v1.swap(v2);
 }
