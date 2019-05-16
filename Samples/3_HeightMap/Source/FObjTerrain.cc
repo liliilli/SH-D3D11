@@ -36,13 +36,13 @@ void FObjTerrain::Initialize(void* pData)
 
     D3D11_BUFFER_DESC vbDesc = {};
     vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    vbDesc.ByteWidth = sizeof(buffer);
+    vbDesc.ByteWidth = sizeof(DVector3<TReal>) * buffer.GetRowSize() * buffer.GetColumnSize();
     vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     vbDesc.CPUAccessFlags = 0;
     vbDesc.MiscFlags = 0;
     vbDesc.StructureByteStride = 0;
 
-    this->hVBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, vbDesc, buffer.data());
+    this->hVBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, vbDesc, buffer.Data());
     assert(MD3D11Resources::HasBuffer(hVBuffer) == true);
     this->mVBuffer.emplace(MD3D11Resources::GetBuffer(this->hVBuffer));
   }

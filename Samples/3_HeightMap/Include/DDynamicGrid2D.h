@@ -195,7 +195,15 @@ public:
     return *(mOwnerPtr + (y * mGridX) + x);
   }
 
+  pointer Data() noexcept
+  {
+    return this->mOwnerPtr;
+  }
 
+  const_pointer Data() const noexcept
+  {
+    return this->mOwnerPtr;
+  }
 
 private:
   TAllocator  mAlloc;

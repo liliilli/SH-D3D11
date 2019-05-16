@@ -21,7 +21,15 @@
 void MRandomMap::TempMake()
 {
   // Get random gradient value.
-  std::array<std::array<DVector2<TReal>, 9>, 9> gradientMap;
+  DDynamicGrid2D<DVector2<TReal>> gradientMap = {9, 9};
+  for (auto y = 0; y < gradientMap.GetRowSize(); ++y)
+  {
+    for (auto x = 0; x < gradientMap.GetColumnSize(); ++x)
+    {
+      gradientMap.Set(x, y, RandomVector2Length<TReal>(1.0f));
+    }
+  }
+#if 0
   for (auto& row : gradientMap)
   {
     for (auto& item : row)
@@ -29,15 +37,16 @@ void MRandomMap::TempMake()
       item = RandomVector2Length<TReal>(1.0f);
     }
   }
+#endif
 
   // Get height value of center-point of each grid cell.
   // Make center-point map.
-  std::array<std::array<DVector2<TReal>, 8>, 8> centerPointMap;
+  DDynamicGrid2D<DVector2<TReal>> centerPointMap = {8, 8};
   for (std::size_t y = 0, ySize = 8; y < ySize; ++y)
   {
     for (std::size_t x = 0, xSize = 8; x < xSize; ++x)
     {
-      centerPointMap[y][x] = {x + 0.5f, y + 0.5f};
+      centerPointMap.Set(x, y, {x + 0.5f, y + 0.5f});
     }
   }
 
@@ -45,7 +54,7 @@ void MRandomMap::TempMake()
   auto DotGridGradient = [&](const DVector2<TReal>& centerPoint, const DVector2<TI32>& index) -> TReal
   {
     const DVector2<TReal> delta = centerPoint - index;
-    return Dot(gradientMap[index.Y][index.X], delta);
+    return Dot(gradientMap.Get(index.X, index.Y), delta);
   };
 
   // Calculate heights
@@ -54,7 +63,7 @@ void MRandomMap::TempMake()
     for (std::size_t x = 0, xSize = 8; x < xSize; ++x)
     {
       // Get values 
-      const auto& centerPoint = centerPointMap[y][x];
+      const auto& centerPoint = centerPointMap.Get(x, y);
       const DVector2<TI32> _0 = {static_cast<TI32>(centerPoint.X), static_cast<TI32>(centerPoint.Y)};
       const DVector2<TI32> _1 = _0 + DVector2<TI32>{1};
       const DVector2<TReal> weight = centerPoint - _0;
@@ -68,7 +77,7 @@ void MRandomMap::TempMake()
       const TReal n11 = DotGridGradient(centerPoint, _1);
       const TReal x1 = Lerp(n01, n11, weight.X);
 
-      mHeightMap[y][x] = Lerp(x0, x1, weight.Y);
+      mHeightMap2.Set(x, y, Lerp(x0, x1, weight.Y));
     }
   }
 
@@ -77,7 +86,10 @@ void MRandomMap::TempMake()
   {
     for (std::size_t x = 0; x < 8; ++x)
     {
-      mVertexBuffer[y][x] = DVector3<TReal>{static_cast<TReal>(x), static_cast<TReal>(y), mHeightMap[y][x]};
+      mVertexBuffer2.Set(
+        x, y, 
+        DVector3<TReal>{static_cast<TReal>(x), static_cast<TReal>(y), mHeightMap2.Get(x, y)}
+      );
     }
   }
 
@@ -99,6 +111,6 @@ void MRandomMap::TempMake()
   }
 }
 
-std::array<std::array<float, 8>, 8> MRandomMap::mHeightMap;
-std::array<std::array<DVector3<TReal>, 8>, 8> MRandomMap::mVertexBuffer;
+DDynamicGrid2D<float> MRandomMap::mHeightMap2 = {8, 8};
+DDynamicGrid2D<DVector3<TReal>> MRandomMap::mVertexBuffer2 = {8, 8};
 std::vector<unsigned> MRandomMap::mIndiceBuffer;

@@ -15,6 +15,7 @@
 #include <array>
 #include <vector>
 #include <Math/Type/Math/DVector3.h>
+#include <DDynamicGrid2D.h>
 
 using namespace ::dy::math;
 
@@ -27,7 +28,7 @@ public:
 
   static const auto& TempGetVertexBuffer()
   {
-    return mVertexBuffer;
+    return mVertexBuffer2;
   }
 
   static const auto& TempGetIndiceBuffer()
@@ -36,7 +37,7 @@ public:
   }
 
 private:
-  static std::array<std::array<float, 8>, 8> mHeightMap;
-  static std::array<std::array<DVector3<TReal>, 8>, 8> mVertexBuffer;
+  static DDynamicGrid2D<float> mHeightMap2;
+  static DDynamicGrid2D<DVector3<TReal>> mVertexBuffer2;
   static std::vector<unsigned> mIndiceBuffer;
 };
