@@ -51,6 +51,10 @@ private:
   std::optional<IComBorrow<ID3D11Buffer>> mVBuffer;
   std::optional<IComBorrow<ID3D11Buffer>> mIBuffer;
   std::optional<IComBorrow<ID3D11Buffer>> mCbObject;
+
+  std::array<int, 2> mTerrainGrid = {0, 0};
+  std::array<int, 2> mTerrainFragment = {0, 0};
+  D11HandleDevice hDevice = nullptr;
 };
 
 class D11DefaultHandles;

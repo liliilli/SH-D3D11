@@ -24,8 +24,8 @@ public:
   float mCamera = 45.0f;
   float mDistance = 10.0f;
 
-  std::array<int, 2> mTerrainGrid = {3, 3};
-  std::array<int, 2> mTerrainFragment = {1, 1};
+  std::array<int, 2> mTerrainGrid = {8, 8};
+  std::array<int, 2> mTerrainFragment = {2, 2};
 };
 
 class FGuiWindow final : public IGuiFrameModel<DModelWindow>

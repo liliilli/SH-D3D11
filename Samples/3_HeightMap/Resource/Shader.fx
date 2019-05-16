@@ -35,7 +35,7 @@ VertexOut VS(VertexIn vin)
   vout.PosH = 
     mul(
       mul(
-        mul(float4(vin.Pos.xyz * float3(1, 1, 3), 1.0f), mModelMat)
+        mul(float4(vin.Pos.xyz * float3(1, 1, 5), 1.0f), mModelMat)
         , mViewMat)
       , mProjMat);
   const float gray = (vin.Pos.z + 1.0f) / 2.0f;

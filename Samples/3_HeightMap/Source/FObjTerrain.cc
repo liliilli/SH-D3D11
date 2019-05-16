@@ -29,38 +29,68 @@ void FObjTerrain::Initialize(void* pData)
   this->hCbObject       = *param.mpCbObject;
   this->mDc.emplace(MD3D11Resources::GetDeviceContext(defaults.mDevice));
   this->mCbObject.emplace(MD3D11Resources::GetBuffer(this->hCbObject));
+  this->hDevice = defaults.mDevice;
 
-  MRandomMap::TempMake();
+  if (MGuiManager::HasSharedModel("Window") == true)
   {
-    const auto& buffer = MRandomMap::TempGetVertexBuffer();
+    const auto& model = static_cast<DModelWindow&>(MGuiManager::GetSharedModel("Window"));
+    bool isChanged = false;
 
-    D3D11_BUFFER_DESC vbDesc = {};
-    vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    vbDesc.ByteWidth = UINT(sizeof(DVector3<TReal>) * buffer.GetRowSize() * buffer.GetColumnSize());
-    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vbDesc.CPUAccessFlags = 0;
-    vbDesc.MiscFlags = 0;
-    vbDesc.StructureByteStride = 0;
+    if (this->mTerrainGrid != model.mTerrainGrid)
+    {
+      this->mTerrainGrid = model.mTerrainGrid;
+      isChanged = true;
+    }
 
-    this->hVBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, vbDesc, buffer.Data());
-    assert(MD3D11Resources::HasBuffer(hVBuffer) == true);
-    this->mVBuffer.emplace(MD3D11Resources::GetBuffer(this->hVBuffer));
-  }
+    if (this->mTerrainFragment != model.mTerrainFragment)
+    {
+      this->mTerrainFragment = model.mTerrainFragment;
+      isChanged = true;
+    }
 
-  {
-    const auto& buffer = MRandomMap::TempGetIndiceBuffer();
+    if (isChanged == true)
+    {
+      MRandomMap::MakeMap(this->mTerrainGrid, this->mTerrainFragment[0]);
+      {
+        const auto& buffer = MRandomMap::TempGetVertexBuffer();
 
-    D3D11_BUFFER_DESC ibDesc;
-    ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    ibDesc.ByteWidth = UINT(buffer.size() * sizeof(TU32));
-    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    ibDesc.CPUAccessFlags = 0;
-    ibDesc.MiscFlags = 0;
-    ibDesc.StructureByteStride = 0;
+        D3D11_BUFFER_DESC vbDesc = {};
+        vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        vbDesc.ByteWidth = UINT(sizeof(DVector3<TReal>) * buffer.GetRowSize() * buffer.GetColumnSize());
+        vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        vbDesc.CPUAccessFlags = 0;
+        vbDesc.MiscFlags = 0;
+        vbDesc.StructureByteStride = 0;
 
-    this->hIBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, ibDesc, buffer.data());
-    assert(MD3D11Resources::HasBuffer(hIBuffer) == true);
-    this->mIBuffer.emplace(MD3D11Resources::GetBuffer(this->hIBuffer));
+        if (this->hVBuffer.IsValid() == true)
+        {
+          MD3D11Resources::RemoveBuffer(this->hVBuffer);
+        }
+        this->hVBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, vbDesc, buffer.Data());
+        assert(MD3D11Resources::HasBuffer(hVBuffer) == true);
+        this->mVBuffer.emplace(MD3D11Resources::GetBuffer(this->hVBuffer));
+      }
+
+      {
+        const auto& buffer = MRandomMap::TempGetIndiceBuffer();
+
+        D3D11_BUFFER_DESC ibDesc;
+        ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        ibDesc.ByteWidth = UINT(buffer.size() * sizeof(TU32));
+        ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        ibDesc.CPUAccessFlags = 0;
+        ibDesc.MiscFlags = 0;
+        ibDesc.StructureByteStride = 0;
+
+        if (this->hIBuffer.IsValid() == true)
+        {
+          MD3D11Resources::RemoveBuffer(this->hIBuffer);
+        }
+        this->hIBuffer = *MD3D11Resources::CreateBuffer(defaults.mDevice, ibDesc, buffer.data());
+        assert(MD3D11Resources::HasBuffer(hIBuffer) == true);
+        this->mIBuffer.emplace(MD3D11Resources::GetBuffer(this->hIBuffer));
+      }
+    }
   }
 }
 
@@ -84,7 +114,70 @@ void FObjTerrain::Update(float delta)
   if (MGuiManager::HasSharedModel("Window") == true)
   {
     auto& model = static_cast<DModelWindow&>(MGuiManager::GetSharedModel("Window"));
+    bool isChanged = false;
+
+    if (this->mTerrainGrid != model.mTerrainGrid)
+    {
+      this->mTerrainGrid = model.mTerrainGrid;
+      isChanged = true;
+    }
+
+    if (this->mTerrainFragment != model.mTerrainFragment)
+    {
+      this->mTerrainFragment = model.mTerrainFragment;
+      isChanged = true;
+    }
+
+    if (isChanged == true)
+    {
+      MRandomMap::MakeMap(this->mTerrainGrid, this->mTerrainFragment[0]);
+      {
+        const auto& buffer = MRandomMap::TempGetVertexBuffer();
+
+        D3D11_BUFFER_DESC vbDesc = {};
+        vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        vbDesc.ByteWidth = UINT(sizeof(DVector3<TReal>) * buffer.GetRowSize() * buffer.GetColumnSize());
+        vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        vbDesc.CPUAccessFlags = 0;
+        vbDesc.MiscFlags = 0;
+        vbDesc.StructureByteStride = 0;
+
+        if (this->hVBuffer.IsValid() == true)
+        {
+          this->mVBuffer = std::nullopt;
+          MD3D11Resources::RemoveBuffer(this->hVBuffer);
+        }
+        this->hVBuffer = *MD3D11Resources::CreateBuffer(this->hDevice, vbDesc, buffer.Data());
+        assert(MD3D11Resources::HasBuffer(hVBuffer) == true);
+        this->mVBuffer.emplace(MD3D11Resources::GetBuffer(this->hVBuffer));
+      }
+
+      {
+        const auto& buffer = MRandomMap::TempGetIndiceBuffer();
+
+        D3D11_BUFFER_DESC ibDesc;
+        ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        ibDesc.ByteWidth = UINT(buffer.size() * sizeof(TU32));
+        ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        ibDesc.CPUAccessFlags = 0;
+        ibDesc.MiscFlags = 0;
+        ibDesc.StructureByteStride = 0;
+
+        if (this->hIBuffer.IsValid() == true)
+        {
+          this->mIBuffer = std::nullopt;
+          MD3D11Resources::RemoveBuffer(this->hIBuffer);
+        }
+        this->hIBuffer = *MD3D11Resources::CreateBuffer(this->hDevice, ibDesc, buffer.data());
+        assert(MD3D11Resources::HasBuffer(hIBuffer) == true);
+        this->mIBuffer.emplace(MD3D11Resources::GetBuffer(this->hIBuffer));
+      }
+    }
+
+    this->mPosition.X = -model.mTerrainGrid[0] * 0.5f;
+    this->mPosition.Z = -model.mTerrainGrid[1] * 0.5f;
   }
+
   mDegRotate.Y += delta * 30;
 }
 

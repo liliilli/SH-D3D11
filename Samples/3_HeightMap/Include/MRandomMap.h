@@ -24,7 +24,7 @@ using namespace ::dy::math;
 class MRandomMap final
 {
 public:
-  static void TempMake();
+  static void MakeMap(const std::array<int, 2>& grid, std::size_t fragment);
 
   static const auto& TempGetVertexBuffer()
   {
