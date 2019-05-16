@@ -15,6 +15,7 @@
 #include <cassert>
 #include <memory>
 #include <DGridYIterator.h>
+#include <DGridYSubscript.h>
 
 /// @class DDynamicGrid2D
 /// @tparam TType
@@ -66,19 +67,31 @@ public:
     }  
   }
 
+  DDynamicGrid2D(DDynamicGrid2D&& movedInstance) noexcept
+    : mAlloc{ movedInstance.mAlloc },
+      mOwnerPtr { movedInstance.mOwnerPtr },
+      mGridX{ movedInstance.mGridX },
+      mGridY{ movedInstance.mGridY }
+  { 
+    movedInstance.mOwnerPtr = nullptr;
+  }
+
   virtual ~DDynamicGrid2D()
   {
-    auto* pItem = this->mOwnerPtr;
-    const auto count = this->mGridX * this->mGridY;
-    for (size_type i = 0; i < count; ++i)
+    if (this->mOwnerPtr != nullptr)
     {
-      // Call destructor.
-      alloc_traits::destroy(this->mAlloc, pItem);
-      ++pItem;
-    }
+      auto* pItem = this->mOwnerPtr;
+      const auto count = this->mGridX * this->mGridY;
+      for (size_type i = 0; i < count; ++i)
+      {
+        // Call destructor.
+        alloc_traits::destroy(this->mAlloc, pItem);
+        ++pItem;
+      }
 
-    this->mAlloc.deallocate(this->mOwnerPtr, count);
-    this->mOwnerPtr = nullptr;
+      this->mAlloc.deallocate(this->mOwnerPtr, count);
+      this->mOwnerPtr = nullptr;
+    }
   }
 
   /// @brief 
@@ -207,6 +220,12 @@ public:
   const_pointer Data() const noexcept
   {
     return this->mOwnerPtr;
+  }
+
+  DGridYSubscript<value_type> operator[](std::size_t b)
+  {
+    value_type* ptr = this->mOwnerPtr + (b * this->mGridX);
+    return {ptr, this->mGridX};
   }
 
   //!
