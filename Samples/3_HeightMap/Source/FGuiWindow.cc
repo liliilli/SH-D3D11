@@ -30,14 +30,10 @@ void FGuiWindow::Render()
 
   // Create a window called "Hello, world!" and append into it.
   ImGui::Begin("Sample 3 : HeightMap", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-#if 0
-  //!
-  //! Sample Description.
-  //!
-  ImGui::Text("Sample Description.");
+  ImGui::Text("Description.");
 
   ImGui::Separator();
+
   //!
   //! Profiling
   //!
@@ -71,12 +67,32 @@ void FGuiWindow::Render()
     ImGui::GetIO().Framerate);
 
   ImGui::Separator();
-  ImGui::Spacing();
+
+  //!
+  //! Draw
+  //!
+
+  ImGui::Text("Drawing");
+  ImGui::Checkbox("Wireframe", &model.mDrawWireframe);
+
+  ImGui::Separator();
+
+  //!
+  //! Perlin Terrain
+  //!
+
+  ImGui::Text("Terrain");
+  ImGui::SliderInt2("Grid", model.mTerrainGrid.data(), 1, 20);
+  ImGui::SliderInt2("Fragment", model.mTerrainFragment.data(), 1, 20);
+
+  ImGui::Separator();
+
   //!
   //! Value properties.
   //!
 
-  ImGui::SliderFloat("Scale", &model.mScale, 0.0f, 2.0f);
-#endif
+  ImGui::Text("Camera");
+  ImGui::SliderFloat("Angle", &model.mCamera, 0.0f, 89.0f);
+  ImGui::SliderFloat("Distance", &model.mDistance, 10.0f, 50.0f);
   ImGui::End();
 }

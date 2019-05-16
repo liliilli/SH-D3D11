@@ -28,6 +28,8 @@
 #include <Graphics/MD3D11Resources.h>
 #include <Resource/D11DefaultHandles.h>
 #include <Math/Utility/XGraphicsMath.h>
+#include <MGuiManager.h>
+#include <FGuiWindow.h>
 
 void FObjCamera::Initialize(void* pData)
 {
@@ -48,6 +50,12 @@ void FObjCamera::Release(void* pData)
 
 void FObjCamera::Update(float delta)
 {
+  auto& model = static_cast<DModelWindow&>(MGuiManager::GetSharedModel("Window"));
+  const DVector4<TReal> initPos = {0, 0, model.mDistance, 1};
+  const DQuaternion<TReal> initQuat = {{-model.mCamera, 0, 0}, true}; 
+  const auto rotatedPos = initQuat.ToMatrix4() * initPos;
+  this->mPosition = { rotatedPos.X, rotatedPos.Y, rotatedPos.Z };
+
   // Update view & projection matrix.
   this->mCbViewProj.mView = 
     LookAt2<TReal>(EGraphics::DirectX, this->mPosition, this->mLookAt, this->mUp);

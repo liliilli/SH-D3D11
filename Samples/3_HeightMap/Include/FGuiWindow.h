@@ -12,13 +12,21 @@
 /// SOFTWARE.
 ///
 
+#include <array>
 #include <IGuiFrameModel.h>
 #include <IGuiModel.h>
 
 class DModelWindow final : public IGuiModel
 {
 public:
+  bool mDrawWireframe = false;
+
   float mScale = 1.0f;
+  float mCamera = 45.0f;
+  float mDistance = 10.0f;
+
+  std::array<int, 2> mTerrainGrid = {3, 3};
+  std::array<int, 2> mTerrainFragment = {1, 1};
 };
 
 class FGuiWindow final : public IGuiFrameModel<DModelWindow>
