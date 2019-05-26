@@ -15,7 +15,7 @@
 #include <array>
 #include <vector>
 #include <Math/Type/Math/DVector3.h>
-#include <DDynamicGrid2D.h>
+#include <Math/Type/Micellanous/DDynamicGrid2D.h>
 
 using namespace ::dy::math;
 
